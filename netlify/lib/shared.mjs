@@ -13,7 +13,7 @@ export const DEFAULTS = {
   cooldownSec: 5,
 };
 
-const store = () => getStore("trk-site");
+const store = () => getStore({ name: "trk-site", consistency: "strong" }); // อ่านค่าล่าสุดเสมอ ไม่ใช้ข้อมูลเก่าจากแคช
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
 
 export const json = (data, status = 200, headers = {}) =>
@@ -94,17 +94,12 @@ export async function rateLimit(key, max, windowMs) {
   return rec.count <= max;
 }
 
-// แคชค่าตั้งค่าในหน่วยความจำ 3 วินาที (ลดการอ่าน Blobs ซ้ำ ๆ ตอนกดดาวน์โหลด)
-let cfgCache = null;
 export async function getConfig() {
-  if (cfgCache && Date.now() - cfgCache.at < 3000) return cfgCache.val;
   let saved = null;
   try { saved = await store().get("config", { type: "json" }); } catch {}
-  const val = { ...DEFAULTS, ...(saved || {}) };
-  cfgCache = { at: Date.now(), val };
-  return val;
+  return { ...DEFAULTS, ...(saved || {}) };
 }
-export async function saveConfig(cfg) { await store().setJSON("config", cfg); cfgCache = null; }
+export async function saveConfig(cfg) { await store().setJSON("config", cfg); }
 
 const clean = (v, max) =>
   String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);

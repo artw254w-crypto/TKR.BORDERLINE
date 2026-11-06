@@ -9,6 +9,12 @@ export default async (req) => {
     if (!sameOrigin(req)) return json({ error: "forbidden" }, 403);
     let body;
     try { body = await readJson(req); } catch { return json({ error: "ข้อมูลไม่ถูกต้อง" }, 400); }
+    if (body && body.statusOnly) {
+      if (body.status !== "ONLINE" && body.status !== "OFFLINE") return json({ error: "สถานะไม่ถูกต้อง" }, 400);
+      const next = { ...(await getConfig()), status: body.status };
+      await saveConfig(next);
+      return json(next);
+    }
     const result = validateConfig(body, await getConfig());
     if (result.error) return json({ error: result.error }, 400);
     await saveConfig(result.value);

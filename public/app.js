@@ -5,7 +5,8 @@
   { const l = document.createElement("link"); l.rel = "stylesheet";
     l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
     document.head.appendChild(l); }
-  let cfg = null, timer = null, popupRun = 0;
+  let cfg = null, timer = null, popupRun = 0, saving = false;
+  const bc = "BroadcastChannel" in window ? new BroadcastChannel("trk-cfg") : null;
 
   async function api(path, method = "GET", body) {
     try {
@@ -50,7 +51,7 @@
 
   async function loadConfig() {
     const r = await api("/api/config");
-    if (r.ok) { cfg = r.data; render(); }
+    if (r.ok) { cfg = r.data; render(); if (bc) bc.postMessage({ cfg }); }
     else {
       $("title").textContent = "T.R.K : BORDER LINE";
       $("noticeDesc").textContent = "โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้านี้";
@@ -252,6 +253,39 @@
   addEventListener("keydown", (e) => {
     if (e.key === "Escape") { closePopup(); hide("login"); hide("panel"); }
   });
+
+  // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
+  let polling = false;
+  async function poll() {
+    if (document.hidden || polling || saving) return;
+    polling = true;
+    const r = await api("/api/config");
+    polling = false;
+    if (r.ok && !saving && JSON.stringify(r.data) !== JSON.stringify(cfg)) { cfg = r.data; render(); }
+  }
+  setInterval(poll, 4000);
+  document.addEventListener("visibilitychange", poll);
+  addEventListener("focus", poll);
+  // แท็บอื่นในเบราว์เซอร์เดียวกันอัปเดตทันที
+  if (bc) bc.onmessage = (e) => { if (e.data && e.data.cfg) { cfg = e.data.cfg; render(); } };
+
+  // กดสถานะ พร้อมใช้งาน / ปิดปรับปรุง ใน Admin: หน้าหลักเปลี่ยนทันที แล้วบันทึกให้เลยโดยไม่ต้องกดบันทึกอีก
+  document.querySelectorAll('input[name="status"]').forEach((el) => el.addEventListener("change", async () => {
+    const v = el.value, prev = cfg ? cfg.status : null;
+    if (cfg) { cfg.status = v; render(); }
+    saving = true;
+    const r = await api("/api/admin-config", "PUT", { statusOnly: true, status: v });
+    saving = false;
+    if (r.status === 401) { hide("panel"); adminHint = false; openLogin(); loadConfig(); return; }
+    if (!r.ok) {
+      if (cfg && prev) { cfg.status = prev; render(); }
+      const back = document.querySelector(`input[name="status"][value="${prev || "ONLINE"}"]`); if (back) back.checked = true;
+      $("saveErr").textContent = (r.data && r.data.error) || "บันทึกสถานะไม่สำเร็จ"; show("saveErr");
+      return;
+    }
+    adminCfg = r.data; hide("saveErr");
+    loadConfig();
+  }));
 
   loadConfig();
   initFx();
