@@ -57,7 +57,7 @@
   function closePopup() { popupRun++; clearInterval(timer); hide("popup"); }
 
   async function startDownload() {
-    if (!cfg || cfg.status !== "ONLINE") return;
+    if (cfg && cfg.status !== "ONLINE") return; // เซิร์ฟเวอร์ตรวจสถานะซ้ำอยู่แล้ว
     const run = ++popupRun;
     clearInterval(timer);
     const go = $("popGo");
@@ -174,7 +174,7 @@
     let w = (cv.width = innerWidth), h = (cv.height = innerHeight);
     addEventListener("resize", () => { w = cv.width = innerWidth; h = cv.height = innerHeight; });
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const ps = Array.from({ length: Math.min(Math.floor(w / 20), 45) }, () => ({
+    const ps = Array.from({ length: Math.min(Math.floor(w / 40), 28) }, () => ({
       x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
       r: Math.random() * 2 + 1, c: Math.random() > 0.5 ? "#65a30d" : "#facc15", a: Math.random() * 0.5 + 0.2,
     }));
@@ -205,6 +205,6 @@
     if (e.key === "Escape") { closePopup(); hide("login"); hide("panel"); }
   });
 
-  initFx();
   loadConfig();
+  initFx();
 })();

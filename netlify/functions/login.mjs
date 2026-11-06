@@ -14,7 +14,6 @@ export default async (req, ctx) => {
   let body;
   try { body = await readJson(req, 1000); } catch { return json({ error: "bad_request" }, 400); }
 
-  await new Promise((r) => setTimeout(r, 400)); // หน่วงเล็กน้อยกันเดารหัสรัว ๆ
   if (typeof body.password !== "string" || body.password.length > 200 || !safeEqual(body.password, adminPass))
     return json({ error: "invalid" }, 401);
 

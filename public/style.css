@@ -1,6 +1,6 @@
 :root{--bg:#0a0d08;--card:#121710;--bd:#263320;--olive:#65a30d;--amber:#facc15;--ok:#4ade80;--red:#ef4444;--tx:#f1f5f9;--mute:#94a3b8}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(rgba(10,13,8,.85),rgba(10,13,8,.97)),radial-gradient(ellipse at 50% 20%,#2a3a1a,#0a0d08 70%);background-attachment:fixed;color:var(--tx);font-family:"Prompt",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+body{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(rgba(10,13,8,.85),rgba(10,13,8,.97)),radial-gradient(ellipse at 50% 20%,#2a3a1a,#0a0d08 70%);color:var(--tx);font-family:"Prompt",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 .orb{font-family:"Orbitron",sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -8,7 +8,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .wrap{max-width:1000px;width:100%;margin:0 auto;padding:0 16px}
 .top,.foot,main{position:relative;z-index:2}
-.top{position:sticky;top:0;background:rgba(10,13,8,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);padding:12px 0}
+.top{position:sticky;top:0;background:rgba(10,13,8,.96);border-bottom:1px solid var(--bd);padding:12px 0}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .bar-r{display:flex;align-items:center;gap:12px}
 .brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:18px;letter-spacing:.05em}
@@ -51,7 +51,7 @@ code{background:var(--bg);color:var(--amber);padding:1px 6px;border-radius:4px}
 .foot{border-top:1px solid var(--bd);background:rgba(10,13,8,.9);padding:14px 0;font-size:12px;color:#64748b}
 .link{background:none;border:0;color:#64748b}.link:hover{color:var(--amber)}
 /* modal */
-.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;background:rgba(0,0,0,.85);backdrop-filter:blur(6px)}
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;background:rgba(0,0,0,.9)}
 .modal[hidden]{display:none}
 .box{position:relative;width:100%;max-width:440px;margin:auto;padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--bd);box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .box.wide{max-width:640px}.center{text-align:center}
