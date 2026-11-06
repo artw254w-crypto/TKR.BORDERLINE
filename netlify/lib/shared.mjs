@@ -133,3 +133,34 @@ export const publicConfig = (c) => ({
   title: c.title, subtitle: c.subtitle, fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
 });
+
+// ---------- ประวัติการดาวน์โหลด (ดูได้เฉพาะแอดมิน) ----------
+// คีย์ = log/<เวลา 13 หลัก>-<รหัส token> จึงเรียงตามเวลาได้ และ token เดิมไม่ถูกนับซ้ำ
+const LOG_KEEP_MS = 90 * 24 * 60 * 60 * 1000; // เก็บย้อนหลัง 90 วัน แล้วลบอัตโนมัติ
+const logTs = (k) => Number(k.slice(4, 17));
+
+export async function logDownload(key, entry) { await store().setJSON("log/" + key, entry); }
+
+export async function markClicked(key) {
+  const s = store(), k = "log/" + key;
+  const e = await s.get(k, { type: "json" });
+  if (e && !e.clicked) { e.clicked = true; e.clickedAt = Date.now(); await s.setJSON(k, e); }
+}
+
+export async function listLogs(limit) {
+  const s = store();
+  const { blobs } = await s.list({ prefix: "log/" });
+  const keys = blobs.map((b) => b.key).sort().reverse();
+  const cutoff = Date.now() - LOG_KEEP_MS, day = Date.now() - 24 * 60 * 60 * 1000;
+  const old = keys.filter((k) => logTs(k) < cutoff);
+  if (old.length) await Promise.all(old.slice(0, 100).map((k) => s.delete(k).catch(() => {})));
+  const live = keys.filter((k) => logTs(k) >= cutoff);
+  const items = (await Promise.all(live.slice(0, limit).map((k) => s.get(k, { type: "json" }).catch(() => null)))).filter(Boolean);
+  return { total: live.length, last24: live.filter((k) => logTs(k) >= day).length, items };
+}
+
+export async function clearLogs() {
+  const s = store();
+  const { blobs } = await s.list({ prefix: "log/" });
+  await Promise.all(blobs.map((b) => s.delete(b.key).catch(() => {})));
+}

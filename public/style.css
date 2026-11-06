@@ -98,3 +98,11 @@ legend{padding:0 6px;font-size:12px;font-weight:700;color:#cbd5e1}
 body::before{content:"";position:fixed;inset:0;z-index:-1;
   background:linear-gradient(rgba(8,10,6,.55),rgba(8,10,6,.8)),url("/bg.jpg") center/cover no-repeat}
 .story{margin:0 0 18px;padding:10px 12px;border-left:3px solid var(--olive);background:rgba(10,13,8,.6);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:#e2e8f0}
+
+.box.xwide{max-width:860px}
+.logwrap{overflow:auto;max-height:55vh;margin:12px 0;border:1px solid var(--bd);border-radius:12px}
+.logwrap table{width:100%;border-collapse:collapse;font-size:11px}
+.logwrap th,.logwrap td{padding:8px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--bd)}
+.logwrap th{position:sticky;top:0;background:#0d1209;color:#94a3b8;font-weight:700}
+.logwrap td.empty{text-align:center;color:#64748b;white-space:normal}
+.tag.ok{color:#34d399}.tag.wait{color:var(--amber)}

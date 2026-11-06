@@ -109,7 +109,12 @@
       if (r.ok && isUrl(r.data.url)) {
         const url = r.data.url;
         go.disabled = false; go.textContent = "🚀 เริ่มดาวน์โหลด!";
-        go.onclick = () => { closePopup(); window.location.href = url; };
+        go.onclick = () => {
+          // แจ้งเซิร์ฟเวอร์ว่ากดดาวน์โหลดจริง (เพื่อบันทึกประวัติ) แล้วไปต่อทันที ไม่รอผล
+          fetch("/api/download", { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "confirm", token: s.data.token }), keepalive: true }).catch(() => {});
+          closePopup(); window.location.href = url;
+        };
       } else {
         $("popMsg").textContent = "ขอลิงก์ไม่สำเร็จ กรุณากดยกเลิกแล้วลองใหม่";
       }
@@ -189,7 +194,67 @@
     loadConfig();
   }
 
-  function logout() { adminHint = false; adminCfg = null; hide("panel"); api("/api/logout", "POST", {}); }
+  /* ---------- ประวัติดาวน์โหลด (แสดงด้วย textContent เท่านั้น กัน XSS จาก User-Agent) ---------- */
+  let logLimit = 100;
+  const uaShort = (ua) => {
+    ua = ua || "";
+    const os = /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS"
+      : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "ไม่ทราบ";
+    const br = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox"
+      : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "ไม่ทราบ";
+    return os + " · " + br;
+  };
+  const fmtTime = (t) => new Date(t).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "short", timeStyle: "medium" });
+
+  function logRow(cells, cls) {
+    const tr = document.createElement("tr");
+    for (const c of cells) {
+      const td = document.createElement("td");
+      td.textContent = c.text;
+      if (c.title) td.title = c.title;
+      if (c.cls) td.className = c.cls;
+      if (cls === "empty") { td.className = "empty"; td.colSpan = 6; }
+      tr.appendChild(td);
+    }
+    return tr;
+  }
+
+  async function loadLogs() {
+    $("logRefresh").disabled = true;
+    const r = await api("/api/admin-log?limit=" + logLimit);
+    $("logRefresh").disabled = false;
+    if (r.status === 401) { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); return openLogin(); }
+    const body = $("logBody"); body.replaceChildren();
+    if (!r.ok) { $("logErr").textContent = "โหลดประวัติไม่สำเร็จ"; show("logErr"); return; }
+    hide("logErr");
+    const { total, last24, items } = r.data;
+    $("logSum").textContent = `ทั้งหมด ${total} ครั้ง · 24 ชั่วโมงล่าสุด ${last24} ครั้ง · เก็บย้อนหลัง 90 วัน (บันทึกตอนระบบส่งลิงก์ให้ ไม่ได้ยืนยันว่าโหลดไฟล์จบ)`;
+    if (!items.length) body.appendChild(logRow([{ text: "ยังไม่มีผู้ดาวน์โหลด" }], "empty"));
+    for (const e of items) {
+      body.appendChild(logRow([
+        { text: fmtTime(e.t) }, { text: e.ip || "-" },
+        { text: [e.country, e.city].filter(Boolean).join(" · ") || "-" },
+        { text: uaShort(e.ua), title: e.ua || "" }, { text: e.ver || "-" },
+        e.clicked ? { text: "✅ กดดาวน์โหลดแล้ว", cls: "tag ok" } : { text: "⏳ ขอลิงก์ (ยังไม่กดโหลด)", cls: "tag wait" },
+      ]));
+    }
+    $("logMore").hidden = items.length >= total;
+  }
+
+  function openLogs() {
+    logLimit = 100;
+    $("logBody").replaceChildren(logRow([{ text: "กำลังโหลด..." }], "empty"));
+    $("logSum").textContent = ""; hide("logErr"); $("logMore").hidden = true;
+    show("logs"); loadLogs();
+  }
+
+  async function clearLogsAll() {
+    if (!window.confirm("ล้างประวัติการดาวน์โหลดทั้งหมด? ย้อนกลับไม่ได้")) return;
+    const r = await api("/api/admin-log", "DELETE", {});
+    if (r.ok) loadLogs(); else { $("logErr").textContent = "ล้างประวัติไม่สำเร็จ"; show("logErr"); }
+  }
+
+  function logout() { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); api("/api/logout", "POST", {}); }
 
   // เช็กเงียบ ๆ ว่ามีเซสชันแอดมินอยู่แล้วไหม (เพื่อให้กดเฟืองแล้วเข้าแผงได้ทันที)
   async function refreshAdminQuiet() {
@@ -249,9 +314,13 @@
   $("loginForm").addEventListener("submit", doLogin);
   $("adminForm").addEventListener("submit", saveForm);
   $("logoutBtn").addEventListener("click", logout);
+  $("logBtn").addEventListener("click", openLogs);
+  $("logRefresh").addEventListener("click", loadLogs);
+  $("logMore").addEventListener("click", () => { logLimit += 100; loadLogs(); });
+  $("logClear").addEventListener("click", clearLogsAll);
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closePopup(); hide("login"); hide("panel"); }
+    if (e.key === "Escape") { closePopup(); hide("login"); hide("logs"); hide("panel"); }
   });
 
   // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
