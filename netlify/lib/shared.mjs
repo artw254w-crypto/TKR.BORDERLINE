@@ -94,12 +94,17 @@ export async function rateLimit(key, max, windowMs) {
   return rec.count <= max;
 }
 
+// แคชค่าตั้งค่าในหน่วยความจำ 3 วินาที (ลดการอ่าน Blobs ซ้ำ ๆ ตอนกดดาวน์โหลด)
+let cfgCache = null;
 export async function getConfig() {
+  if (cfgCache && Date.now() - cfgCache.at < 3000) return cfgCache.val;
   let saved = null;
   try { saved = await store().get("config", { type: "json" }); } catch {}
-  return { ...DEFAULTS, ...(saved || {}) };
+  const val = { ...DEFAULTS, ...(saved || {}) };
+  cfgCache = { at: Date.now(), val };
+  return val;
 }
-export async function saveConfig(cfg) { await store().setJSON("config", cfg); }
+export async function saveConfig(cfg) { await store().setJSON("config", cfg); cfgCache = null; }
 
 const clean = (v, max) =>
   String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);

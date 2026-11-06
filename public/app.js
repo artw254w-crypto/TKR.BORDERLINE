@@ -1,6 +1,10 @@
 "use strict";
 (() => {
   const $ = (id) => document.getElementById(id);
+  // โหลดฟอนต์แบบไม่บล็อกการแสดงผล (หน้าเว็บขึ้นทันที แล้วฟอนต์ค่อยสลับเข้ามา)
+  { const l = document.createElement("link"); l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
+    document.head.appendChild(l); }
   let cfg = null, timer = null, popupRun = 0;
 
   async function api(path, method = "GET", body) {
@@ -56,62 +60,80 @@
   /* ---------- ดาวน์โหลด (เซิร์ฟเวอร์ตรวจเวลาคูลดาวน์) ---------- */
   function closePopup() { popupRun++; clearInterval(timer); hide("popup"); }
 
-  async function startDownload() {
-    if (cfg && cfg.status !== "ONLINE") return; // เซิร์ฟเวอร์ตรวจสถานะซ้ำอยู่แล้ว
+  const isUrl = (u) => typeof u === "string" && u.startsWith("https://");
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const errText = (st) => st === 429 ? "คุณกดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
+    : st === 503 ? "ระบบปิดปรับปรุงอยู่ในขณะนี้" : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง";
+
+  function showError(status) {
+    clearInterval(timer);
+    $("count").textContent = "✖";
+    $("popMsg").textContent = errText(status);
+    $("prog").style.width = "0%";
+    const go = $("popGo"); go.disabled = true; go.onclick = null; go.textContent = "⏳ กำลังเตรียม...";
+  }
+
+  // กดแล้วป๊อปอัปเปิดและนับถอยหลังทันที (ไม่รอเซิร์ฟเวอร์) ส่วนการขอ token ทำพร้อมกันเบื้องหลัง
+  // เมื่อครบเวลาระบบขอลิงก์รอไว้ให้ ปุ่มดาวน์โหลดจึงกดแล้วไปเลย เซิร์ฟเวอร์ยังตรวจคูลดาวน์เองเหมือนเดิม
+  function startDownload() {
+    if (cfg && cfg.status !== "ONLINE") return;
     const run = ++popupRun;
     clearInterval(timer);
-    const go = $("popGo");
-    go.disabled = true; go.onclick = null; go.textContent = "⏳ กำลังเตรียม...";
-    $("popMsg").textContent = "ระบบกำลังเตรียมลิงก์ดาวน์โหลดให้ รอสักครู่นะ";
-    $("count").textContent = "…";
-    $("prog").style.width = "100%";
-    show("popup");
-
-    const s = await api("/api/download", "POST", { action: "start" });
-    if (run !== popupRun) return;
-    if (!s.ok) {
-      $("count").textContent = "✖";
-      $("popMsg").textContent = s.status === 429 ? "คุณกดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
-        : s.status === 503 ? "ระบบปิดปรับปรุงอยู่ในขณะนี้" : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง";
-      return;
-    }
-    const total = s.data.wait, token = s.data.token;
+    const go = $("popGo"), prog = $("prog");
+    const total = (cfg && cfg.cooldownSec) || 5;
     let left = total;
-    $("count").textContent = left;
-    go.textContent = `⏳ กำลังเตรียมไฟล์ (${left}s)...`;
-    requestAnimationFrame(() => { $("prog").style.width = ((left - 1) / total) * 100 + "%"; });
 
-    timer = setInterval(async () => {
+    go.disabled = true; go.onclick = null; go.textContent = `⏳ กำลังเตรียมไฟล์ (${left}s)...`;
+    $("popMsg").textContent = "ระบบกำลังเตรียมลิงก์ดาวน์โหลดให้ รอสักครู่นะ";
+    $("count").textContent = left;
+    prog.style.transition = "none"; prog.style.width = "100%"; void prog.offsetWidth; prog.style.transition = "";
+    show("popup");
+    requestAnimationFrame(() => { prog.style.width = ((left - 1) / total) * 100 + "%"; });
+
+    const started = api("/api/download", "POST", { action: "start" });
+    started.then((s) => { if (run === popupRun && !s.ok) showError(s.status); });
+
+    const finish = async () => {
+      go.textContent = "🚀 กำลังเปิดลิงก์...";
+      const s = await started;
+      if (run !== popupRun || !s.ok) return;
+      let r = { ok: false, status: 0, data: {} };
+      // token ถูกออกหลังกดเล็กน้อย จึงลองซ้ำสั้น ๆ จนเซิร์ฟเวอร์ยืนยันว่าครบเวลา
+      for (let i = 0; i < 40; i++) {
+        r = await api("/api/download", "POST", { action: "redeem", token: s.data.token });
+        if (run !== popupRun) return;
+        if (r.status !== 403) break;
+        await sleep(250);
+      }
+      if (r.ok && isUrl(r.data.url)) {
+        const url = r.data.url;
+        go.disabled = false; go.textContent = "🚀 เริ่มดาวน์โหลด!";
+        go.onclick = () => { closePopup(); window.location.href = url; };
+      } else {
+        $("popMsg").textContent = "ขอลิงก์ไม่สำเร็จ กรุณากดยกเลิกแล้วลองใหม่";
+      }
+    };
+
+    timer = setInterval(() => {
       left--;
       if (left > 0) {
         $("count").textContent = left;
-        $("prog").style.width = ((left - 1) / total) * 100 + "%";
+        prog.style.width = ((left - 1) / total) * 100 + "%";
         go.textContent = `⏳ กำลังเตรียมไฟล์ (${left}s)...`;
         return;
       }
       clearInterval(timer);
       $("count").textContent = "✨";
-      go.disabled = false;
-      go.textContent = "🚀 เริ่มดาวน์โหลด!";
-      go.onclick = async () => {
-        go.disabled = true;
-        // เผื่อเวลานาฬิกาเบราว์เซอร์/เครือข่ายเหลื่อมกันเล็กน้อย
-        let r = await api("/api/download", "POST", { action: "redeem", token });
-        if (r.status === 403) { await new Promise((x) => setTimeout(x, 1500)); r = await api("/api/download", "POST", { action: "redeem", token }); }
-        if (r.ok && typeof r.data.url === "string" && r.data.url.startsWith("https://")) {
-          closePopup();
-          window.location.href = r.data.url;
-        } else {
-          $("popMsg").textContent = "ขอลิงก์ไม่สำเร็จ กรุณากดยกเลิกแล้วลองใหม่";
-        }
-      };
+      finish();
     }, 1000);
   }
 
-  /* ---------- Admin ---------- */
+  /* ---------- Admin (เปิดหน้าต่างทันที แล้วค่อยโหลดข้อมูลเบื้องหลัง) ---------- */
+  let adminHint = false, adminCfg = null;
+
   function openLogin() {
     $("pass").value = ""; hide("loginErr"); show("login");
-    setTimeout(() => $("pass").focus(), 50);
+    $("pass").focus();
   }
 
   function fillForm(c) {
@@ -121,18 +143,27 @@
     hide("saveErr"); hide("saveOk");
   }
 
-  async function openPanel() {
+  async function refreshAdmin() {
     const r = await api("/api/admin-config");
-    if (r.status === 401) return openLogin();
-    if (!r.ok) return;
-    fillForm(r.data); show("panel");
+    if (r.status === 401) { adminHint = false; adminCfg = null; hide("panel"); openLogin(); return; }
+    if (r.ok) { adminHint = true; adminCfg = r.data; fillForm(r.data); }
+  }
+
+  function openPanel() {
+    if (!adminHint) return openLogin();
+    if (adminCfg) fillForm(adminCfg);
+    show("panel");
+    refreshAdmin();
   }
 
   async function doLogin(e) {
     e.preventDefault();
+    const btn = $("loginForm").querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = "กำลังตรวจสอบ...";
     const r = await api("/api/login", "POST", { password: $("pass").value });
     $("pass").value = "";
-    if (r.ok) { hide("login"); openPanel(); return; }
+    btn.disabled = false; btn.textContent = "ยืนยันเข้าสู่ระบบ";
+    if (r.ok) { adminHint = true; hide("login"); openPanel(); return; }
     const msg = r.status === 429 ? "ลองผิดหลายครั้งเกินไป กรุณารอ 15 นาที"
       : r.status === 500 ? "เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า ADMIN_PASSWORD / SESSION_SECRET"
       : "รหัสผ่านไม่ถูกต้อง";
@@ -142,28 +173,45 @@
   async function saveForm(e) {
     e.preventDefault();
     hide("saveErr"); hide("saveOk");
+    const btn = $("adminForm").querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
     const r = await api("/api/admin-config", "PUT", {
       status: document.querySelector('input[name="status"]:checked').value,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
     });
-    if (r.status === 401) { hide("panel"); return openLogin(); }
+    btn.disabled = false; btn.textContent = "💾 บันทึก";
+    if (r.status === 401) { adminHint = false; hide("panel"); return openLogin(); }
     if (!r.ok) { $("saveErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("saveErr"); return; }
+    adminCfg = r.data;
     show("saveOk");
     loadConfig();
   }
 
-  async function logout() { await api("/api/logout", "POST", {}); hide("panel"); }
+  function logout() { adminHint = false; adminCfg = null; hide("panel"); api("/api/logout", "POST", {}); }
+
+  // เช็กเงียบ ๆ ว่ามีเซสชันแอดมินอยู่แล้วไหม (เพื่อให้กดเฟืองแล้วเข้าแผงได้ทันที)
+  async function refreshAdminQuiet() {
+    const r = await api("/api/admin-config");
+    if (r.ok) { adminHint = true; adminCfg = r.data; }
+  }
 
   /* ---------- เมาส์ + พื้นหลัง ---------- */
   function initFx() {
     const cur = $("cursor"), dot = $("cursorDot");
+    let mx = 0, my = 0, tgt = null, queued = false;
     addEventListener("mousemove", (e) => {
-      document.body.classList.add("mouse");
-      cur.style.left = dot.style.left = e.clientX + "px";
-      cur.style.top = dot.style.top = e.clientY + "px";
-      cur.classList.toggle("hot", !!e.target.closest("button, label"));
-    });
+      mx = e.clientX; my = e.clientY; tgt = e.target;
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        document.body.classList.add("mouse");
+        cur.style.left = dot.style.left = mx + "px";
+        cur.style.top = dot.style.top = my + "px";
+        cur.classList.toggle("hot", !!(tgt && tgt.closest && tgt.closest("button, label")));
+      });
+    }, { passive: true });
     addEventListener("click", (e) => {
       const r = document.createElement("div");
       r.className = "ripple"; r.style.left = e.clientX + "px"; r.style.top = e.clientY + "px";
@@ -207,4 +255,9 @@
 
   loadConfig();
   initFx();
+  // อุ่นเครื่องฟังก์ชันดาวน์โหลดล่วงหน้า ลดอาการหน่วงตอนกดครั้งแรก (ตอบ 405 ทันที ไม่แตะข้อมูลใด ๆ)
+  (window.requestIdleCallback || setTimeout)(() => {
+    fetch("/api/download", { method: "GET", cache: "no-store" }).catch(() => {});
+    refreshAdminQuiet();
+  });
 })();

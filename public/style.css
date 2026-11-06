@@ -3,7 +3,9 @@
 body{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:#0a0d08;color:var(--tx);font-family:"Prompt",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 .orb{font-family:"Orbitron",sans-serif}
-button{font:inherit;color:inherit;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:active:not(:disabled){transform:scale(.97)}
+label,input{touch-action:manipulation}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .wrap{max-width:1000px;width:100%;margin:0 auto;padding:0 16px}
@@ -42,7 +44,7 @@ h1{font-size:24px;font-weight:900;margin-bottom:6px;text-shadow:0 0 10px rgba(10
 .stat{padding:12px;border-radius:12px;background:rgba(10,13,8,.7);border:1px solid var(--bd)}
 .stat small{display:block;font-size:11px;color:var(--mute);margin-bottom:4px}
 .stat b{font-size:12px;color:#34d399}.stat b.olive{color:var(--olive)}
-.dl{width:100%;padding:16px 24px;border:0;border-radius:12px;background:#059669;color:#022c22;font-weight:800;font-size:17px;letter-spacing:.05em;box-shadow:0 8px 24px rgba(5,150,105,.3);transition:background .2s,transform .1s}
+.dl{width:100%;padding:16px 24px;border:0;border-radius:12px;background:#059669;color:#022c22;font-weight:800;font-size:17px;letter-spacing:.05em;box-shadow:0 8px 24px rgba(5,150,105,.3);transition:background .08s,transform .05s}
 .dl:hover:not(:disabled){background:#10b981}.dl:active:not(:disabled){transform:scale(.98)}
 .dl:disabled{background:var(--bd);color:#64748b;box-shadow:none;cursor:not-allowed;opacity:.75}
 .guide{margin-top:22px;padding-top:18px;border-top:1px solid var(--bd);font-size:11px;color:var(--mute)}
@@ -84,7 +86,7 @@ legend{padding:0 6px;font-size:12px;font-weight:700;color:#cbd5e1}
 /* cursor (เฉพาะอุปกรณ์ที่มีเมาส์) */
 #cursor,#cursorDot,.ripple{position:fixed;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%)}
 #cursor,#cursorDot{display:none;left:-100px;top:-100px}
-#cursor{width:28px;height:28px;border:2px solid rgba(74,222,128,.8);z-index:99999;transition:width .15s,height .15s;box-shadow:0 0 10px rgba(74,222,128,.4)}
+#cursor{width:28px;height:28px;border:2px solid rgba(74,222,128,.8);z-index:99999;transition:width .08s,height .08s;box-shadow:0 0 10px rgba(74,222,128,.4)}
 #cursor.hot{width:42px;height:42px;border-color:var(--amber)}
 #cursorDot{width:6px;height:6px;background:var(--ok);z-index:100000;box-shadow:0 0 8px var(--ok)}
 @media(hover:hover) and (pointer:fine){body.mouse,body.mouse button,body.mouse input,body.mouse label{cursor:none!important}body.mouse #cursor,body.mouse #cursorDot{display:block}}
