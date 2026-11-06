@@ -1,6 +1,6 @@
 :root{--bg:#0a0d08;--card:#121710;--bd:#263320;--olive:#65a30d;--amber:#facc15;--ok:#4ade80;--red:#ef4444;--tx:#f1f5f9;--mute:#94a3b8}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(rgba(10,13,8,.85),rgba(10,13,8,.97)),radial-gradient(ellipse at 50% 20%,#2a3a1a,#0a0d08 70%);color:var(--tx);font-family:"Prompt",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+body{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:#0a0d08;color:var(--tx);font-family:"Prompt",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 .orb{font-family:"Orbitron",sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -91,3 +91,8 @@ legend{padding:0 6px;font-size:12px;font-weight:700;color:#cbd5e1}
 .ripple{width:50px;height:50px;border:2px solid var(--ok);background:rgba(74,222,128,.25);animation:r .5s ease-out forwards;z-index:99998}
 @keyframes r{from{transform:translate(-50%,-50%) scale(.2);opacity:1}to{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* รูปพื้นหลังเต็มจอ (วางไฟล์ bg.jpg ไว้ในโฟลเดอร์ public) */
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:linear-gradient(rgba(8,10,6,.55),rgba(8,10,6,.8)),url("/bg.jpg") center/cover no-repeat}
+.story{margin:0 0 18px;padding:10px 12px;border-left:3px solid var(--olive);background:rgba(10,13,8,.6);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:#e2e8f0}
