@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>T.R.K : BORDER LINE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="cursor"></div><div id="cursorDot"></div>
+<canvas id="bg"></canvas>
+
+<header class="top">
+  <div class="wrap bar">
+    <div class="brand orb"><span class="logo">🎯</span><span>T.R.K : <b>BORDER LINE</b></span></div>
+    <div class="bar-r">
+      <div id="hBadge" class="badge"><span class="dot pulse"></span><span id="hStatus">SERVER ONLINE</span></div>
+      <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ">⚙</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap grid">
+  <section class="card left">
+    <div class="topline"></div>
+    <div class="cover"><span class="hero">🪖</span><span class="build orb">BUILD 2026.1</span></div>
+    <h1 id="title" class="orb"></h1>
+    <p id="subtitle" class="desc"></p>
+    <div class="row"><span>💾 ขนาดไฟล์</span><b id="size" class="orb olive"></b></div>
+    <div class="row"><span>🔖 เวอร์ชั่น (Build)</span><b id="version" class="orb amber"></b></div>
+    <div class="row"><span>🖥 รองรับระบบ</span><b id="os"></b></div>
+  </section>
+
+  <section class="card right">
+    <div class="topline alt"></div>
+    <div id="notice" class="notice">
+      <span id="noticeIcon" class="n-icon">✔</span>
+      <div><div id="noticeTitle" class="n-title"></div><div id="noticeDesc" class="n-desc"></div></div>
+    </div>
+    <div class="two">
+      <div class="stat"><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus"></b></div>
+      <div class="stat"><small>การตรวจสอบความปลอดภัย</small><b class="olive">🛡 สแกนไวรัสเรียบร้อย</b></div>
+    </div>
+    <button id="dlBtn" class="dl orb" type="button"><span id="dlText"></span></button>
+    <div class="guide">
+      <h4>ℹ คำแนะนำในการติดตั้ง</h4>
+      <ul>
+        <li>แตกไฟล์ ZIP / RAR ด้วยโปรแกรม WinRAR หรือ 7-Zip เวอร์ชั่นล่าสุด</li>
+        <li>ปิดโปรแกรมป้องกันไวรัสชั่วคราวหากเกิดข้อผิดพลาดในการแตกไฟล์</li>
+        <li>รันไฟล์ <code>BORDERLINE2</code> ได้เลยทันที</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap bar">
+    <span>© 2026 PIXEL TECH SOFT Co., Ltd. All Rights Reserved.</span>
+    <button id="footAdmin" class="link" type="button">🔒 เข้าสู่ระบบ Admin</button>
+  </div>
+</footer>
+
+<!-- Download popup -->
+<div id="popup" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="popTitle">
+  <div class="box center">
+    <div class="hourglass">⏳</div>
+    <h3 id="popTitle" class="orb">กำลังเตรียมสมรภูมิรบ...</h3>
+    <p id="popMsg" class="desc">ระบบกำลังเตรียมลิงก์ดาวน์โหลดให้ รอสักครู่นะ</p>
+    <div class="counter">
+      <div id="count" class="orb amber big">5</div>
+      <small>วินาทีก่อนปลดล็อกลิงก์ดาวน์โหลด</small>
+      <div class="progress"><div id="prog"></div></div>
+    </div>
+    <div class="btns">
+      <button id="popCancel" class="btn ghost" type="button">❌ ยกเลิก</button>
+      <button id="popGo" class="btn" type="button" disabled>⏳ กำลังเตรียม...</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin login -->
+<div id="login" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="box">
+    <button class="x" data-close="login" type="button" aria-label="ปิด">✕</button>
+    <div class="center"><div class="shield">🛡</div><h3 id="loginTitle" class="orb">ADMIN AUTHENTICATION</h3>
+    <p class="desc">กรอกรหัสผ่านเพื่อเข้าสู่แผงควบคุมระบบ</p></div>
+    <form id="loginForm" autocomplete="off">
+      <label>รหัสผ่านแอดมิน<input id="pass" type="password" required maxlength="200" autocomplete="current-password"></label>
+      <div id="loginErr" class="err" hidden></div>
+      <button class="btn full" type="submit">ยืนยันเข้าสู่ระบบ</button>
+    </form>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+  <div class="box wide">
+    <div class="phead"><h3 id="panelTitle" class="orb">ADMIN PANEL</h3>
+      <div><button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
+      <button class="x static" data-close="panel" type="button" aria-label="ปิด">✕</button></div></div>
+    <form id="adminForm" autocomplete="off">
+      <fieldset><legend>1. สถานะการดาวน์โหลด</legend>
+        <div class="two">
+          <label class="opt on"><input type="radio" name="status" value="ONLINE"><span>🟢 พร้อมใช้งาน<small>เปิดดาวน์โหลดตามปกติ</small></span></label>
+          <label class="opt off"><input type="radio" name="status" value="OFFLINE"><span>🔴 ปิดปรับปรุง<small>ปิดปุ่มดาวน์โหลดทันที</small></span></label>
+        </div>
+        <label>ข้อความเมื่อปิดปรับปรุง<input id="fMsg" type="text" maxlength="200"></label>
+      </fieldset>
+      <fieldset><legend>2. เวลาคูลดาวน์ (วินาที)</legend>
+        <input id="fCool" type="number" min="1" max="30" required>
+      </fieldset>
+      <fieldset><legend>3. ข้อมูลเกมและลิงก์ดาวน์โหลด</legend>
+        <label>URL ลิงก์ดาวน์โหลด (https เท่านั้น)<input id="fUrl" type="url" required maxlength="2000"></label>
+        <div class="two">
+          <label>ชื่อเกม<input id="fTitle" type="text" required maxlength="60"></label>
+          <label>ขนาดไฟล์<input id="fSize" type="text" required maxlength="20"></label>
+        </div>
+        <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
+      </fieldset>
+      <div id="saveErr" class="err" hidden></div>
+      <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>
+      <div class="btns end"><button class="btn ghost" data-close="panel" type="button">ปิด</button><button class="btn" type="submit">💾 บันทึก</button></div>
+    </form>
+    <p class="hint">เปลี่ยนรหัสผ่านแอดมินได้ที่ Netlify → Site settings → Environment variables (ADMIN_PASSWORD)</p>
+  </div>
+</div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
