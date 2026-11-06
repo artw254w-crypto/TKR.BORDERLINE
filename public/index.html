@@ -112,7 +112,7 @@
 <div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
   <div class="box wide">
     <div class="phead"><h3 id="panelTitle" class="orb">ADMIN PANEL</h3>
-      <div><button id="logBtn" class="link" type="button">📋 ประวัติดาวน์โหลด</button> <button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
+      <div><button id="specBtn" class="link" type="button">🖥 สเปคเครื่อง</button> <button id="logBtn" class="link" type="button">📋 ประวัติดาวน์โหลด</button> <button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
       <button class="x static" data-close="panel" type="button" aria-label="ปิด">✕</button></div></div>
     <form id="adminForm" autocomplete="off">
       <fieldset><legend>1. สถานะการดาวน์โหลด</legend>
@@ -133,18 +133,29 @@
         </div>
         <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
       </fieldset>
-      <fieldset><legend>4. ความต้องการระบบ (ขั้นต่ำ / แนะนำ)</legend>
-        <p class="hint">ช่องที่เว้นว่างจะไม่แสดงบนหน้าเว็บ ช่องหมายเหตุขึ้นบรรทัดใหม่ได้</p>
-        <div class="two spec-admin">
-          <div><h4 class="specs-t">ขั้นต่ำ</h4><div id="aSpecMin"></div></div>
-          <div><h4 class="specs-t">แนะนำ</h4><div id="aSpecRec"></div></div>
-        </div>
-      </fieldset>
       <div id="saveErr" class="err" hidden></div>
       <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>
       <div class="btns end"><button class="btn ghost" data-close="panel" type="button">ปิด</button><button class="btn" type="submit">💾 บันทึก</button></div>
     </form>
     <p class="hint">เปลี่ยนรหัสผ่านแอดมินได้ที่ Netlify → Site settings → Environment variables (ADMIN_PASSWORD)</p>
+  </div>
+</div>
+
+<!-- System requirements editor (admin only) -->
+<div id="specsEdit" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="specEditTitle">
+  <div class="box xwide">
+    <div class="phead"><h3 id="specEditTitle" class="orb">ความต้องการระบบ</h3>
+      <button class="x static" data-close="specsEdit" type="button" aria-label="ปิด">✕</button></div>
+    <form id="specForm" autocomplete="off">
+      <p class="hint">ช่องที่เว้นว่างจะไม่แสดงบนหน้าเว็บ ช่องหมายเหตุขึ้นบรรทัดใหม่ได้</p>
+      <div class="two spec-admin">
+        <div><h4 class="specs-t">ขั้นต่ำ</h4><div id="aSpecMin"></div></div>
+        <div><h4 class="specs-t">แนะนำ</h4><div id="aSpecRec"></div></div>
+      </div>
+      <div id="specErr" class="err" hidden></div>
+      <div id="specOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>
+      <div class="btns end"><button class="btn ghost" data-close="specsEdit" type="button">ปิด</button><button class="btn" type="submit">💾 บันทึก</button></div>
+    </form>
   </div>
 </div>
 

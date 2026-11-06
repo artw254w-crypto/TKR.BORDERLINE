@@ -206,7 +206,6 @@
     $("fUrl").value = c.fileUrl; $("fTitle").value = c.title; $("fSize").value = c.fileSize;
     $("fVer").value = c.version; $("fMsg").value = c.maintenanceMsg; $("fCool").value = c.cooldownSec;
     document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
-    fillSpecInputs(c.specs);
     hide("saveErr"); hide("saveOk");
   }
 
@@ -246,13 +245,37 @@
       status: document.querySelector('input[name="status"]:checked').value,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
-      specs: readSpecInputs(),
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
     if (r.status === 401) { adminHint = false; hide("panel"); return openLogin(); }
     if (!r.ok) { $("saveErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("saveErr"); return; }
     adminCfg = r.data;
     show("saveOk");
+    loadConfig();
+  }
+
+  /* ---------- แก้ความต้องการระบบ (หน้าต่างแยกจากแผงหลัก) ---------- */
+  function openSpecs() {
+    if (!adminHint) return openLogin();
+    fillSpecInputs(adminCfg && adminCfg.specs);
+    hide("specErr"); hide("specOk");
+    show("specsEdit");
+  }
+
+  async function saveSpecs(e) {
+    e.preventDefault();
+    hide("specErr"); hide("specOk");
+    const btn = $("specForm").querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
+    let base = adminCfg;
+    if (!base) { const g = await api("/api/admin-config"); if (g.ok) base = adminCfg = g.data; }
+    let r = { ok: false, status: 0, data: {} };
+    if (base) r = await api("/api/admin-config", "PUT", { ...base, specs: readSpecInputs() });
+    btn.disabled = false; btn.textContent = "💾 บันทึก";
+    if (r.status === 401) { adminHint = false; adminCfg = null; hide("specsEdit"); hide("panel"); return openLogin(); }
+    if (!r.ok) { $("specErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("specErr"); return; }
+    adminCfg = r.data;
+    show("specOk");
     loadConfig();
   }
 
@@ -329,7 +352,7 @@
     if (r.ok) loadLogs(); else { $("logErr").textContent = "ล้างประวัติไม่สำเร็จ"; show("logErr"); }
   }
 
-  function logout() { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); api("/api/logout", "POST", {}); }
+  function logout() { adminHint = false; adminCfg = null; hide("logs"); hide("specsEdit"); hide("panel"); api("/api/logout", "POST", {}); }
 
   // เช็กเงียบ ๆ ว่ามีเซสชันแอดมินอยู่แล้วไหม (เพื่อให้กดเฟืองแล้วเข้าแผงได้ทันที)
   async function refreshAdminQuiet() {
@@ -390,12 +413,21 @@
   $("adminForm").addEventListener("submit", saveForm);
   $("logoutBtn").addEventListener("click", logout);
   $("logBtn").addEventListener("click", openLogs);
+  $("specBtn").addEventListener("click", openSpecs);
+  $("specForm").addEventListener("submit", saveSpecs);
   $("logRefresh").addEventListener("click", loadLogs);
   $("logMore").addEventListener("click", () => { logLimit += 100; loadLogs(); });
   $("logClear").addEventListener("click", clearLogsAll);
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
+  // คลิกที่ว่างนอกกล่อง (พื้นหลังมืด) ของหน้าต่างแอดมินแล้วปิดทันที ไม่ต้องกดกากบาท
+  // ต้องกดลงและปล่อยที่พื้นหลังทั้งคู่ จึงไม่ปิดเองตอนลากเมาส์เลือกข้อความแล้วปล่อยนอกกล่อง
+  for (const id of ["login", "panel", "specsEdit", "logs"]) {
+    const m = $(id); let down = false;
+    m.addEventListener("pointerdown", (e) => { down = e.target === m; });
+    m.addEventListener("click", (e) => { if (down && e.target === m) hide(id); down = false; });
+  }
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closePopup(); hide("login"); hide("logs"); hide("panel"); }
+    if (e.key === "Escape") { closePopup(); hide("login"); hide("logs"); hide("specsEdit"); hide("panel"); }
   });
 
   // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
