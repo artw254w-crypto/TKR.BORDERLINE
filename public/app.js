@@ -269,24 +269,6 @@
   // แท็บอื่นในเบราว์เซอร์เดียวกันอัปเดตทันที
   if (bc) bc.onmessage = (e) => { if (e.data && e.data.cfg) { cfg = e.data.cfg; render(); } };
 
-  // กดสถานะ พร้อมใช้งาน / ปิดปรับปรุง ใน Admin: หน้าหลักเปลี่ยนทันที แล้วบันทึกให้เลยโดยไม่ต้องกดบันทึกอีก
-  document.querySelectorAll('input[name="status"]').forEach((el) => el.addEventListener("change", async () => {
-    const v = el.value, prev = cfg ? cfg.status : null;
-    if (cfg) { cfg.status = v; render(); }
-    saving = true;
-    const r = await api("/api/admin-config", "PUT", { statusOnly: true, status: v });
-    saving = false;
-    if (r.status === 401) { hide("panel"); adminHint = false; openLogin(); loadConfig(); return; }
-    if (!r.ok) {
-      if (cfg && prev) { cfg.status = prev; render(); }
-      const back = document.querySelector(`input[name="status"][value="${prev || "ONLINE"}"]`); if (back) back.checked = true;
-      $("saveErr").textContent = (r.data && r.data.error) || "บันทึกสถานะไม่สำเร็จ"; show("saveErr");
-      return;
-    }
-    adminCfg = r.data; hide("saveErr");
-    loadConfig();
-  }));
-
   loadConfig();
   initFx();
   // อุ่นเครื่องฟังก์ชันดาวน์โหลดล่วงหน้า ลดอาการหน่วงตอนกดครั้งแรก (ตอบ 405 ทันที ไม่แตะข้อมูลใด ๆ)
