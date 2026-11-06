@@ -26,6 +26,64 @@
   const show = (id) => { $(id).hidden = false; };
   const hide = (id) => { $(id).hidden = true; };
 
+  /* ---------- ความต้องการระบบ ---------- */
+  const SPEC_FIELDS = [
+    ["os", "ระบบปฏิบัติการ"], ["cpu", "โปรเซสเซอร์"], ["ram", "หน่วยความจำ"], ["gpu", "กราฟิกส์"],
+    ["directx", "DirectX"], ["network", "เครือข่าย"], ["storage", "พื้นที่จัดเก็บข้อมูล"],
+    ["sound", "การเสียง"], ["notes", "หมายเหตุเพิ่มเติม"],
+  ];
+
+  function renderSpecTier(boxId, listId, data) {
+    const list = $(listId); list.replaceChildren();
+    let n = 0;
+    for (const [k, label] of SPEC_FIELDS) {
+      const v = data && data[k];
+      if (!v) continue;
+      n++;
+      const row = document.createElement("div");
+      row.className = "srow" + (k === "notes" ? " note" : "");
+      const b = document.createElement("b"); b.textContent = label + ": ";
+      const sp = document.createElement("span"); sp.textContent = v;
+      row.append(b, sp);
+      list.appendChild(row);
+    }
+    $(boxId).hidden = n === 0;
+    return n;
+  }
+
+  function renderSpecs(specs) {
+    const a = renderSpecTier("specMinBox", "specMin", specs && specs.min);
+    const b = renderSpecTier("specRecBox", "specRec", specs && specs.rec);
+    $("specs").hidden = a + b === 0;
+  }
+
+  // สร้างช่องกรอกของแผงแอดมิน (ครั้งเดียว)
+  function buildSpecInputs() {
+    for (const [tier, id] of [["min", "aSpecMin"], ["rec", "aSpecRec"]]) {
+      const box = $(id);
+      for (const [k, label] of SPEC_FIELDS) {
+        const lab = document.createElement("label");
+        lab.textContent = label;
+        const el = document.createElement(k === "notes" ? "textarea" : "input");
+        if (k !== "notes") el.type = "text";
+        el.id = `spec-${tier}-${k}`;
+        el.maxLength = k === "notes" ? 500 : 150;
+        lab.appendChild(el);
+        box.appendChild(lab);
+      }
+    }
+  }
+
+  const readSpecInputs = () => {
+    const out = { min: {}, rec: {} };
+    for (const tier of ["min", "rec"]) for (const [k] of SPEC_FIELDS) out[tier][k] = $(`spec-${tier}-${k}`).value;
+    return out;
+  };
+  const fillSpecInputs = (specs) => {
+    for (const tier of ["min", "rec"]) for (const [k] of SPEC_FIELDS)
+      $(`spec-${tier}-${k}`).value = (specs && specs[tier] && specs[tier][k]) || "";
+  };
+
   // ใช้ textContent ทั้งหมด ไม่มี innerHTML กับข้อมูลที่มาจากผู้ใช้/เซิร์ฟเวอร์ (กัน XSS)
   function render() {
     if (!cfg) return;
@@ -47,6 +105,7 @@
       : cfg.maintenanceMsg || "อยู่ระหว่างการปรับปรุงระบบ";
     $("dlBtn").disabled = !on;
     $("dlText").textContent = on ? "🚀 พร้อมดาวน์โหลด (คลิกที่นี่)" : "🔒 ระบบปิดปรับปรุงชั่วคราว";
+    renderSpecs(cfg.specs);
   }
 
   async function loadConfig() {
@@ -136,6 +195,7 @@
 
   /* ---------- Admin (เปิดหน้าต่างทันที แล้วค่อยโหลดข้อมูลเบื้องหลัง) ---------- */
   let adminHint = false, adminCfg = null;
+  buildSpecInputs();
 
   function openLogin() {
     $("pass").value = ""; hide("loginErr"); show("login");
@@ -146,6 +206,7 @@
     $("fUrl").value = c.fileUrl; $("fTitle").value = c.title; $("fSize").value = c.fileSize;
     $("fVer").value = c.version; $("fMsg").value = c.maintenanceMsg; $("fCool").value = c.cooldownSec;
     document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
+    fillSpecInputs(c.specs);
     hide("saveErr"); hide("saveOk");
   }
 
@@ -185,6 +246,7 @@
       status: document.querySelector('input[name="status"]:checked').value,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
+      specs: readSpecInputs(),
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
     if (r.status === 401) { adminHint = false; hide("panel"); return openLogin(); }

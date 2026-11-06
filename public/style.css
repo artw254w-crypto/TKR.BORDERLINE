@@ -70,8 +70,8 @@ code{background:var(--bg);color:var(--amber);padding:1px 6px;border-radius:4px}
 .btn.full{width:100%;margin-top:12px}.btn:disabled{background:#334155;color:#64748b;cursor:not-allowed}
 .btn:hover:not(:disabled){opacity:.9}
 label{display:block;font-size:12px;color:var(--mute);margin-top:10px}
-input[type=text],input[type=url],input[type=password],input[type=number]{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:10px;background:#020617;border:1px solid var(--bd);color:#fff;font:inherit;font-size:13px}
-input:focus{outline:none;border-color:var(--olive)}
+input[type=text],input[type=url],input[type=password],input[type=number],textarea{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:10px;background:#020617;border:1px solid var(--bd);color:#fff;font:inherit;font-size:13px}
+input:focus,textarea:focus{outline:none;border-color:var(--olive)}
 fieldset{margin-bottom:14px;padding:14px;border-radius:12px;border:1px solid var(--bd);background:rgba(10,13,8,.8)}
 legend{padding:0 6px;font-size:12px;font-weight:700;color:#cbd5e1}
 .opt{display:flex;gap:10px;align-items:center;margin:0 0 6px;padding:10px;border:1px solid var(--bd);border-radius:12px;cursor:pointer;color:#e2e8f0;font-size:12px;font-weight:600}
@@ -106,3 +106,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;
 .logwrap th{position:sticky;top:0;background:#0d1209;color:#94a3b8;font-weight:700}
 .logwrap td.empty{text-align:center;color:#64748b;white-space:normal}
 .tag.ok{color:#34d399}.tag.wait{color:var(--amber)}
+
+/* ความต้องการระบบ */
+.specs{padding-bottom:32px}
+.specs-h{font-size:16px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bd)}
+.specs-cols{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media(max-width:700px){.specs-cols{grid-template-columns:1fr}}
+.specs-t{font-size:13px;color:#cbd5e1;margin-bottom:10px}
+.srow{font-size:12px;line-height:1.7;margin-bottom:8px;color:#e2e8f0;word-break:break-word}
+.srow b{color:var(--mute);font-weight:600}
+.srow.note span{display:block;white-space:pre-line;color:var(--mute);margin-top:2px}
+.spec-admin{margin-bottom:0}
+.spec-admin textarea{width:100%;min-height:90px;resize:vertical}

@@ -58,6 +58,17 @@
   </section>
 </main>
 
+<section id="specs" class="wrap specs" hidden aria-labelledby="specsTitle">
+  <div class="card">
+    <div class="topline"></div>
+    <h2 id="specsTitle" class="orb specs-h">ความต้องการระบบ</h2>
+    <div class="specs-cols">
+      <div id="specMinBox"><h3 class="specs-t">ขั้นต่ำ:</h3><div id="specMin"></div></div>
+      <div id="specRecBox"><h3 class="specs-t">แนะนำ:</h3><div id="specRec"></div></div>
+    </div>
+  </div>
+</section>
+
 <footer class="foot">
   <div class="wrap bar">
     <span>© 2026 PIXEL TECH SOFT Co., Ltd. All Rights Reserved.</span>
@@ -121,6 +132,13 @@
           <label>ขนาดไฟล์<input id="fSize" type="text" required maxlength="20"></label>
         </div>
         <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
+      </fieldset>
+      <fieldset><legend>4. ความต้องการระบบ (ขั้นต่ำ / แนะนำ)</legend>
+        <p class="hint">ช่องที่เว้นว่างจะไม่แสดงบนหน้าเว็บ ช่องหมายเหตุขึ้นบรรทัดใหม่ได้</p>
+        <div class="two spec-admin">
+          <div><h4 class="specs-t">ขั้นต่ำ</h4><div id="aSpecMin"></div></div>
+          <div><h4 class="specs-t">แนะนำ</h4><div id="aSpecRec"></div></div>
+        </div>
       </fieldset>
       <div id="saveErr" class="err" hidden></div>
       <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>

@@ -11,7 +11,34 @@ export const DEFAULTS = {
   status: "ONLINE",
   maintenanceMsg: "ขณะนี้ระบบปิดปรับปรุงชั่วคราวเพื่ออัปเดตเซิร์ฟเวอร์ กรุณากลับมาใหม่อีกครั้งในภายหลัง",
   cooldownSec: 5,
+  specs: {
+    min: {
+      os: "Windows 10 64-bit",
+      cpu: "Intel Core i5-4590 / AMD FX 8350 equivalent",
+      ram: "แรม 8 GB",
+      gpu: "NVIDIA GeForce RTX 2060 super",
+      directx: "เวอร์ชัน 11",
+      network: "",
+      storage: "พื้นที่ว่างที่พร้อมใช้งาน 15 GB",
+      sound: "DirectX compatible",
+      notes: "Requires 64-bit processor and operating system\nIntegrated graphics cards not supported\nController support recommended for optimal experience",
+    },
+    rec: {
+      os: "Windows 11 64-bit",
+      cpu: "Intel Core i7-8700K / AMD Ryzen 5 3600",
+      ram: "แรม 16 GB",
+      gpu: "NVIDIA GeForce RTX 3060 / AMD Radeon RX 6600 XT",
+      directx: "เวอร์ชัน 12",
+      network: "การเชื่อมต่ออินเทอร์เน็ตแบบบรอดแบนด์",
+      storage: "พื้นที่ว่างที่พร้อมใช้งาน 65 MB",
+      sound: "DirectX compatible with surround sound support",
+      notes: "SSD installation recommended for faster loading times\n1080p gaming at 60fps with High settings",
+    },
+  },
 };
+
+// ฟิลด์ของ "ความต้องการระบบ" (ขั้นต่ำ / แนะนำ) ใช้ชุดเดียวกัน ช่องที่เว้นว่างจะไม่แสดงบนเว็บ
+export const SPEC_KEYS = ["os", "cpu", "ram", "gpu", "directx", "network", "storage", "sound", "notes"];
 
 const store = () => getStore({ name: "trk-site", consistency: "strong" }); // อ่านค่าล่าสุดเสมอ ไม่ใช้ข้อมูลเก่าจากแคช
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
@@ -97,12 +124,34 @@ export async function rateLimit(key, max, windowMs) {
 export async function getConfig() {
   let saved = null;
   try { saved = await store().get("config", { type: "json" }); } catch {}
-  return { ...DEFAULTS, ...(saved || {}) };
+  const cfg = { ...DEFAULTS, ...(saved || {}) };
+  cfg.specs = {
+    min: { ...DEFAULTS.specs.min, ...(saved?.specs?.min || {}) },
+    rec: { ...DEFAULTS.specs.rec, ...(saved?.specs?.rec || {}) },
+  };
+  return cfg;
 }
 export async function saveConfig(cfg) { await store().setJSON("config", cfg); }
 
 const clean = (v, max) =>
   String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
+
+const cleanNote = (v, max) =>
+  String(v ?? "").replace(/\r/g, "").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").trim().slice(0, max);
+
+function cleanSpecs(input, current) {
+  const out = {};
+  for (const tier of ["min", "rec"]) {
+    out[tier] = {};
+    for (const k of SPEC_KEYS) {
+      const raw = input?.[tier]?.[k];
+      const fallback = current?.[tier]?.[k] ?? "";
+      const v = raw === undefined ? fallback : raw;
+      out[tier][k] = k === "notes" ? cleanNote(v, 500) : clean(v, 150);
+    }
+  }
+  return out;
+}
 
 export function validateConfig(input, current) {
   const out = { ...current };
@@ -116,6 +165,7 @@ export function validateConfig(input, current) {
   const sec = parseInt(input.cooldownSec, 10);
   if (!(sec >= 1 && sec <= 30)) return { error: "คูลดาวน์ต้องอยู่ระหว่าง 1-30 วินาที" };
   out.cooldownSec = sec;
+  out.specs = cleanSpecs(input.specs, current.specs);
 
   let u;
   try { u = new URL(String(input.fileUrl || "")); } catch { return { error: "ลิงก์ดาวน์โหลดไม่ถูกต้อง" }; }
@@ -132,6 +182,7 @@ export function validateConfig(input, current) {
 export const publicConfig = (c) => ({
   title: c.title, subtitle: c.subtitle, fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
+  specs: c.specs,
 });
 
 // ---------- ประวัติการดาวน์โหลด (ดูได้เฉพาะแอดมิน) ----------
