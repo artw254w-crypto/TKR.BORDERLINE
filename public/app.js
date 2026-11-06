@@ -196,14 +196,25 @@
 
   /* ---------- ประวัติดาวน์โหลด (แสดงด้วย textContent เท่านั้น กัน XSS จาก User-Agent) ---------- */
   let logLimit = 100;
-  const uaShort = (ua) => {
-    ua = ua || "";
-    const os = /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS"
-      : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "ไม่ทราบ";
-    const br = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox"
-      : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "ไม่ทราบ";
-    return os + " · " + br;
-  };
+  // แยกระบบปฏิบัติการ (Windows / Android / ...) กับเบราว์เซอร์ (Chrome / Edge / ...) ออกจากกัน
+  // ลำดับการตรวจสำคัญ: เบราว์เซอร์อื่นหลายตัวมีคำว่า Chrome/ ใน User-Agent ต้องเช็คตัวเฉพาะก่อน Chrome
+  const uaOS = (ua) =>
+    /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iOS"
+    : /CrOS/.test(ua) ? "ChromeOS" : /Mac OS X|Macintosh/.test(ua) ? "macOS" : /Linux|X11/.test(ua) ? "Linux" : "อื่น ๆ";
+  const uaBrowser = (ua) =>
+    /EdgiOS|EdgA|Edg\//.test(ua) ? "Edge"
+    : /OPR\/|OPiOS|Opera/.test(ua) ? "Opera"
+    : /SamsungBrowser/.test(ua) ? "Samsung Internet"
+    : /UCBrowser|UCWEB/.test(ua) ? "UC Browser"
+    : /Vivaldi/.test(ua) ? "Vivaldi"
+    : /YaBrowser/.test(ua) ? "Yandex"
+    : /FBAN|FBAV|FB_IAB/.test(ua) ? "Facebook (ในแอป)"
+    : /Instagram/.test(ua) ? "Instagram (ในแอป)"
+    : /\bLine\//.test(ua) ? "LINE (ในแอป)"
+    : /Firefox\/|FxiOS/.test(ua) ? "Firefox"
+    : /Chrome\/|CriOS/.test(ua) ? "Google Chrome"
+    : /Safari\//.test(ua) ? "Safari"
+    : "อื่น ๆ";
   const fmtTime = (t) => new Date(t).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "short", timeStyle: "medium" });
 
   function logRow(cells, cls) {
@@ -213,7 +224,7 @@
       td.textContent = c.text;
       if (c.title) td.title = c.title;
       if (c.cls) td.className = c.cls;
-      if (cls === "empty") { td.className = "empty"; td.colSpan = 6; }
+      if (cls === "empty") { td.className = "empty"; td.colSpan = 7; }
       tr.appendChild(td);
     }
     return tr;
@@ -234,7 +245,9 @@
       body.appendChild(logRow([
         { text: fmtTime(e.t) }, { text: e.ip || "-" },
         { text: [e.country, e.city].filter(Boolean).join(" · ") || "-" },
-        { text: uaShort(e.ua), title: e.ua || "" }, { text: e.ver || "-" },
+        { text: e.ua ? uaOS(e.ua) : "-", title: e.ua || "" },
+        { text: e.ua ? uaBrowser(e.ua) : "-", title: e.ua || "" },
+        { text: e.ver || "-" },
         e.clicked ? { text: "✅ กดดาวน์โหลดแล้ว", cls: "tag ok" } : { text: "⏳ ขอลิงก์ (ยังไม่กดโหลด)", cls: "tag wait" },
       ]));
     }
