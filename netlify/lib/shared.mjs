@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
+import { probeDrive, extractFileId } from "./drive.mjs";
 
 export const DEFAULTS = {
   title: "T.R.K : BORDER LINE",
@@ -197,6 +198,41 @@ export async function markClicked(key) {
   const e = await s.get(k, { type: "json" });
   if (e && !e.clicked) { e.clicked = true; e.clickedAt = Date.now(); await s.setJSON(k, e); }
 }
+
+export const getLog = (key) => store().get("log/" + key, { type: "json" });
+
+// แก้ไขบางฟิลด์ของรายการประวัติเดิม (คืน null ถ้าไม่พบรายการ)
+export async function updateLog(key, patch) {
+  const s = store(), k = "log/" + key;
+  const e = await s.get(k, { type: "json" });
+  if (!e) return null;
+  const next = { ...e, ...(typeof patch === "function" ? patch(e) : patch) };
+  await s.setJSON(k, next);
+  return next;
+}
+
+// ตรวจ Google Drive แล้วแคชผลสั้น ๆ (ต่อไฟล์) กันยิงถี่ ๆ จน Google ตอบ 429 และไม่หน่วงปุ่มดาวน์โหลด
+// fresh=true ข้ามแคช (ใช้ตอนแอดมินกดตรวจเองหรือเทียบไฟล์) ผลที่เป็น timeout/network ไม่แคช
+const PROBE_TTL_MS = 60 * 1000;
+export async function probeDriveCached(fileUrl, { fresh = false, timeoutMs = 6000 } = {}) {
+  const got = extractFileId(fileUrl);
+  const s = store(), k = "probe-" + (got.id || "none");
+  if (!fresh && got.id) {
+    try {
+      const c = await s.get(k, { type: "json" });
+      if (c && Date.now() - c.checkedAt < PROBE_TTL_MS) return { ...c, cached: true };
+    } catch {}
+  }
+  const r = await probeDrive(fileUrl, { timeoutMs });
+  if (got.id && r.code !== "timeout" && r.code !== "network") { try { await s.setJSON(k, r); } catch {} }
+  return r;
+}
+
+// ย่อผลตรวจ Drive ให้พอดีกับที่เก็บในประวัติ (ไม่เก็บข้อมูลเกินจำเป็น)
+export const driveSummary = (r) => ({
+  checkedAt: r.checkedAt, sev: r.sev, code: r.code, title: r.title, hint: r.hint, detail: r.detail,
+  http: r.http, apiHttp: r.apiHttp, size: r.size, md5: r.md5, name: r.name, ms: r.ms,
+});
 
 export async function listLogs(limit) {
   const s = store();

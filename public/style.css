@@ -99,13 +99,28 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;
   background:linear-gradient(rgba(8,10,6,.55),rgba(8,10,6,.8)),url("/bg.jpg") center/cover no-repeat}
 .story{margin:0 0 18px;padding:10px 12px;border-left:3px solid var(--olive);background:rgba(10,13,8,.6);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:#e2e8f0}
 
-.box.xwide{max-width:860px}
+.box.xwide{max-width:860px}.box.logbox{max-width:1180px}
 .logwrap{overflow:auto;max-height:55vh;margin:12px 0;border:1px solid var(--bd);border-radius:12px}
 .logwrap table{width:100%;border-collapse:collapse;font-size:11px}
 .logwrap th,.logwrap td{padding:8px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--bd)}
 .logwrap th{position:sticky;top:0;background:#0d1209;color:#94a3b8;font-weight:700}
 .logwrap td.empty{text-align:center;color:#64748b;white-space:normal}
-.tag.ok{color:#34d399}.tag.wait{color:var(--amber)}
+.tag.ok{color:#34d399}.tag.wait{color:var(--amber)}.tag.warn{color:var(--amber)}.tag.bad{color:#fb7185}
+.logwrap tr.lrow{cursor:pointer}.logwrap tr.lrow:hover td{background:rgba(101,163,13,.06)}
+.logwrap tr.detail td{white-space:normal;background:#0d1209;line-height:1.7;color:#cbd5e1;-webkit-user-select:text;user-select:text}
+.logwrap tr.detail .dwrap{position:sticky;left:0;width:min(780px,calc(100vw - 110px))}
+.logwrap tr.detail .dline{margin-bottom:6px;word-break:break-word}.logwrap tr.detail .dline b{color:#e2e8f0}
+
+/* ตรวจไฟล์ที่ดาวน์โหลด (Drive เทียบกับไฟล์ในเครื่อง) */
+.vbtn{display:block;width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px dashed var(--bd);background:transparent;color:#cbd5e1;font-size:13px;font-weight:600}
+.vbtn:hover{border-color:var(--olive);color:var(--amber)}
+input[type=file]{display:block;width:100%;margin-top:8px;padding:10px;border:1px dashed var(--bd);border-radius:10px;background:#020617;color:#cbd5e1;font-size:12px}
+#vProg{height:100%;width:0;background:linear-gradient(90deg,#f59e0b,var(--olive))}
+.vres{margin-top:12px;padding:12px;border-radius:10px;font-size:12px;line-height:1.7;text-align:left;border:1px solid var(--bd);background:rgba(10,13,8,.8);-webkit-user-select:text;user-select:text}
+.vres b{display:block;margin-bottom:4px;font-size:13px}.vres span{display:block;color:#cbd5e1;word-break:break-word;white-space:pre-line}
+.vres.ok{color:#34d399;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3)}
+.vres.warn{color:var(--amber);background:rgba(250,204,21,.08);border-color:rgba(250,204,21,.3)}
+.vres.error{color:#fb7185;background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3)}
 
 /* ความต้องการระบบ */
 .specs{padding-bottom:32px}

@@ -172,6 +172,7 @@
           // แจ้งเซิร์ฟเวอร์ว่ากดดาวน์โหลดจริง (เพื่อบันทึกประวัติ) แล้วไปต่อทันที ไม่รอผล
           fetch("/api/download", { method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ action: "confirm", token: s.data.token }), keepalive: true }).catch(() => {});
+          saveToken(s.data.token);
           closePopup(); window.location.href = url;
         };
       } else {
@@ -191,6 +192,86 @@
       $("count").textContent = "✨";
       finish();
     }, 1000);
+  }
+
+  /* ---------- ตรวจไฟล์ที่ดาวน์โหลดมา เทียบกับต้นฉบับบน Google Drive ---------- */
+  // เว็บไม่มีทางรู้เองว่าเบราว์เซอร์โหลดจบ/ไฟล์เสียหรือไม่ จึงให้ผู้ใช้เลือกไฟล์ที่โหลดมา
+  // แล้วคำนวณขนาด (+MD5) ในเครื่อง ส่งเฉพาะตัวเลขให้เซิร์ฟเวอร์เทียบกับ Drive และบันทึกลงประวัติ
+  const TOKEN_KEY = "trk_last_dl";
+  const saveToken = (t) => { try { localStorage.setItem(TOKEN_KEY, t); } catch {} };
+  const loadToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } };
+  let vRun = 0, vSkipMd5 = false;
+
+  function vResult(level, title, detail) {
+    const box = $("vRes"); box.className = "vres " + level;
+    $("vTitle").textContent = title; $("vDetail").textContent = detail || ""; box.hidden = false;
+  }
+  function vNote(text) { const m = $("vMsg"); m.textContent = text || ""; m.hidden = !text; }
+  function vBusy(on) {
+    $("vGo").disabled = on; $("vFile").disabled = on; $("vProgWrap").hidden = !on;
+    if (!on) $("vSkip").hidden = true;
+  }
+  const vAlive = (run) => run === vRun && !$("verify").hidden;
+
+  function openVerify() {
+    vRun++; vSkipMd5 = false;
+    $("vFile").value = ""; $("vProg").style.width = "0%";
+    vBusy(false); vNote(""); $("vRes").hidden = true;
+    show("verify");
+  }
+
+  // อ่านไฟล์ทีละ 8 MB แล้วป้อนเข้า MD5 (ไม่โหลดทั้งไฟล์เข้าหน่วยความจำ) คืน null ถ้าผู้ใช้กดข้ามหรือปิดหน้าต่าง
+  async function md5File(file, run) {
+    const h = TRKMD5.create(), CH = 8 * 1024 * 1024;
+    for (let o = 0; o < file.size; o += CH) {
+      if (vSkipMd5 || !vAlive(run)) return null;
+      h.update(new Uint8Array(await file.slice(o, o + CH).arrayBuffer()));
+      $("vProg").style.width = (Math.min(1, (o + CH) / file.size) * 100).toFixed(1) + "%";
+    }
+    return h.hex();
+  }
+
+  const verifyErr = (r) => r.status === 0 ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"
+    : r.data.error === "expired" || r.data.error === "invalid_token" ? "การขอดาวน์โหลดครั้งล่าสุดหมดอายุหรือไม่ถูกต้อง (ตรวจได้ภายใน 7 วันหลังกดดาวน์โหลด) กรุณากดดาวน์โหลดใหม่แล้วตรวจอีกครั้ง"
+    : r.data.error === "no_log" ? "ไม่พบรายการดาวน์โหลดนี้ในระบบ กรุณากดดาวน์โหลดใหม่"
+    : r.status === 429 ? "ตรวจบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
+    : "เซิร์ฟเวอร์ตรวจไฟล์ไม่สำเร็จ (" + (r.data.error || "HTTP " + r.status) + ") กรุณาลองใหม่";
+
+  async function runVerify() {
+    const f = $("vFile").files && $("vFile").files[0];
+    $("vRes").hidden = true;
+    if (!f) { vNote("กรุณาเลือกไฟล์ที่ดาวน์โหลดมาก่อน"); return; }
+    const token = loadToken();
+    if (!token) {
+      vNote("");
+      vResult("warn", "ยังไม่พบการดาวน์โหลดในเบราว์เซอร์นี้", "กดปุ่มดาวน์โหลดจากหน้านี้ก่อน แล้วค่อยกลับมาตรวจไฟล์ (ระบบต้องรู้ว่าไฟล์ของคุณมาจากการขอดาวน์โหลดครั้งไหน)");
+      return;
+    }
+    const run = ++vRun; vSkipMd5 = false;
+    vBusy(true); $("vProg").style.width = "0%"; vNote("กำลังเทียบขนาดไฟล์กับ Google Drive...");
+    const post = (extra) => api("/api/download", "POST", { action: "verify", token, size: f.size, name: f.name, ...extra });
+
+    let r = await post({});
+    if (!vAlive(run)) return;
+    if (r.ok && r.data.final === false && r.data.status === "need_md5") {
+      $("vSkip").hidden = false;
+      vNote("ขนาดตรงกันแล้ว กำลังตรวจเนื้อไฟล์ (MD5) ไฟล์ใหญ่ใช้เวลาสักครู่ อย่าปิดหน้านี้");
+      let md5;
+      try { md5 = await md5File(f, run); }
+      catch {
+        if (!vAlive(run)) return;
+        vBusy(false); vNote("");
+        vResult("error", "อ่านไฟล์ไม่สำเร็จ", "เบราว์เซอร์อ่านไฟล์นี้ไม่ได้ (ไฟล์ถูกลบ/ย้าย/ถูกโปรแกรมอื่นใช้อยู่ หรือไฟล์เสียหาย) ลองเลือกไฟล์ใหม่ หรือดาวน์โหลดใหม่");
+        return;
+      }
+      if (!vAlive(run)) return;
+      vNote("กำลังเทียบผลกับ Google Drive...");
+      r = await post(md5 ? { md5 } : { skipMd5: true });
+      if (!vAlive(run)) return;
+    }
+    vBusy(false); vNote("");
+    if (r.ok) vResult(r.data.level === "ok" ? "ok" : r.data.level === "error" ? "error" : "warn", r.data.title, r.data.detail);
+    else vResult("error", "ตรวจไฟล์ไม่สำเร็จ", verifyErr(r));
   }
 
   /* ---------- Admin (เปิดหน้าต่างทันที แล้วค่อยโหลดข้อมูลเบื้องหลัง) ---------- */
@@ -302,6 +383,85 @@
     : "อื่น ๆ";
   const fmtTime = (t) => new Date(t).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "short", timeStyle: "medium" });
 
+  const fmtBytes = (n) => {
+    if (!Number.isFinite(n)) return "-";
+    const u = ["ไบต์", "KB", "MB", "GB", "TB"]; let v = n, i = 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (i ? v.toFixed(2) : String(v)) + " " + u[i] + (i ? ` (${n.toLocaleString("en-US")} ไบต์)` : "");
+  };
+  // ป้ายสั้นสำหรับคอลัมน์ Google Drive (รายละเอียดเต็มดูที่แถวขยายด้านล่าง)
+  const DRIVE_SHORT = {
+    ok: "พร้อมโหลด", bad_url: "ลิงก์ไม่ถูกต้อง", folder: "เป็นโฟลเดอร์", google_native: "ไม่ใช่ไฟล์ให้โหลด", not_found: "ไม่พบไฟล์",
+    trashed: "อยู่ในถังขยะ", no_permission: "ไม่ได้แชร์", quota_exceeded: "โควต้าเต็ม", rate_limited: "ถูกจำกัดความถี่",
+    drive_error: "Drive ขัดข้อง", virus_scan: "หน้าเตือนไวรัส", html_unknown: "ตอบเป็นหน้าเว็บ", empty_file: "ไฟล์ 0 ไบต์",
+    size_conflict: "ขนาดไม่ตรง", timeout: "Drive ตอบช้า", network: "เชื่อมต่อไม่ได้",
+  };
+  const VERIFY_SHORT = {
+    ok: "ไฟล์สมบูรณ์", ok_size_only: "ขนาดตรง (ไม่มี MD5)", corrupt_size: "ไฟล์เสีย (ขนาดไม่ตรง)", corrupt_md5: "ไฟล์เสีย (MD5 ไม่ตรง)",
+    unverifiable: "ตรวจไม่ได้", drive_unavailable: "ตรวจไม่ได้ (Drive มีปัญหา)",
+  };
+  const sevIcon = (sev) => sev === "ok" ? "✅ " : sev === "warn" ? "⚠ " : "❌ ";
+  const sevCls = (sev) => "tag " + (sev === "ok" ? "ok" : sev === "warn" ? "warn" : "bad");
+  const isProblem = (e) => !!((e.drive && e.drive.sev !== "ok") || (e.verify && e.verify.level !== "ok"));
+
+  const driveCell = (e) => e.drive
+    ? { text: sevIcon(e.drive.sev) + (DRIVE_SHORT[e.drive.code] || e.drive.title), cls: sevCls(e.drive.sev), title: e.drive.title }
+    : { text: "- (ไม่ได้ตรวจ)", title: "รายการนี้บันทึกก่อนเปิดระบบตรวจ Google Drive" };
+  const verifyCell = (e) => e.verify
+    ? { text: sevIcon(e.verify.level) + (VERIFY_SHORT[e.verify.status] || e.verify.title), cls: sevCls(e.verify.level), title: e.verify.title }
+    : e.clicked ? { text: "⏳ ผู้ใช้ยังไม่ได้ตรวจไฟล์", cls: "tag wait", title: "เว็บรู้ไม่ได้เองว่าโหลดจบหรือไฟล์เสียหรือไม่ จนกว่าผู้ใช้จะกดตรวจไฟล์" } : { text: "-" };
+
+  // บรรทัดรายละเอียดของผลตรวจ Google Drive (ใช้ทั้งในแถวขยายและกล่อง "ตรวจตอนนี้")
+  function driveLines(d) {
+    const out = [];
+    if (d.hint) out.push(["วิธีแก้", d.hint]);
+    if (d.detail) out.push(["รายละเอียด", d.detail]);
+    out.push(["ข้อมูลทางเทคนิค", `HTTP ${d.http || "-"} · Drive API ${d.apiHttp || "-"} · ใช้เวลา ${d.ms ?? "-"} ms · ตรวจเมื่อ ${d.checkedAt ? fmtTime(d.checkedAt) : "-"}`]);
+    out.push(["ไฟล์บน Drive", `${d.name ? `"${d.name}" · ` : ""}ขนาด ${d.size != null ? fmtBytes(d.size) : "ไม่ทราบ"} · MD5 ${d.md5 || "ไม่มี (ตั้ง GOOGLE_API_KEY เพื่อให้ตรวจเนื้อไฟล์ได้)"}`]);
+    return out;
+  }
+
+  function line(box, label, text) {
+    const d = document.createElement("div"); d.className = "dline";
+    const b = document.createElement("b"); b.textContent = label + ": ";
+    d.append(b, document.createTextNode(text));
+    box.appendChild(d);
+  }
+
+  function detailRow(e) {
+    const tr = document.createElement("tr"); tr.className = "detail";
+    const cell = document.createElement("td"); cell.colSpan = 9; tr.appendChild(cell);
+    // กล่องข้อความตรึงซ้าย กว้างเท่าหน้าต่างที่มองเห็น ไม่ยืดไปตามความกว้างของตารางที่เลื่อนได้
+    const td = document.createElement("div"); td.className = "dwrap"; cell.appendChild(td);
+    line(td, "ผู้ใช้", `${e.ip || "-"} · ${[e.country, e.city].filter(Boolean).join(" · ") || "ไม่ทราบที่ตั้ง"} · ${e.ua ? uaOS(e.ua) + " / " + uaBrowser(e.ua) : "ไม่ทราบอุปกรณ์"} · เวอร์ชัน ${e.ver || "-"}`);
+    if (e.ua) line(td, "User-Agent", e.ua);
+    line(td, "การดาวน์โหลด", `ขอลิงก์เมื่อ ${fmtTime(e.t)} · ` + (e.clicked ? `กดดาวน์โหลดเมื่อ ${e.clickedAt ? fmtTime(e.clickedAt) : "-"}` : "ยังไม่ได้กดปุ่มดาวน์โหลด"));
+    if (e.drive) {
+      line(td, "Google Drive ตอนส่งลิงก์", sevIcon(e.drive.sev) + e.drive.title);
+      for (const [k, v] of driveLines(e.drive)) line(td, "　" + k, v);
+    } else line(td, "Google Drive", "ไม่ได้ตรวจ (รายการนี้บันทึกก่อนเปิดระบบตรวจ Drive หรือตรวจไม่สำเร็จตอนนั้น)");
+    if (e.verify) {
+      const v = e.verify;
+      line(td, "ไฟล์ที่ผู้ใช้โหลดมา", sevIcon(v.level) + v.title);
+      if (v.detail) line(td, "　รายละเอียด", v.detail);
+      line(td, "　ไฟล์ที่ผู้ใช้เลือก", `${v.name ? `"${v.name}" · ` : ""}ขนาด ${fmtBytes(v.size)} · MD5 ${v.md5 || "ไม่ได้คำนวณ"} · ตรวจเมื่อ ${fmtTime(v.at)}`);
+    } else if (e.clicked) line(td, "ไฟล์ที่ผู้ใช้โหลดมา", "ผู้ใช้ยังไม่ได้กดตรวจไฟล์ (เว็บรู้ไม่ได้เองว่าเบราว์เซอร์โหลดจบหรือไฟล์เสียหรือไม่)");
+    return tr;
+  }
+
+  async function checkDriveNow() {
+    const box = $("driveNow"), btn = $("logCheck");
+    btn.disabled = true; box.className = "vres"; $("dnTitle").textContent = "กำลังตรวจ Google Drive..."; $("dnDetail").textContent = ""; box.hidden = false;
+    const r = await api("/api/admin-log?check=1");
+    btn.disabled = false;
+    if (r.status === 401) { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); return openLogin(); }
+    if (!r.ok || !r.data.drive) { box.className = "vres error"; $("dnTitle").textContent = "ตรวจ Google Drive ไม่สำเร็จ"; $("dnDetail").textContent = "เซิร์ฟเวอร์ตรวจไม่ได้ ลองใหม่อีกครั้ง"; return; }
+    const d = r.data.drive;
+    box.className = "vres " + (d.sev === "ok" ? "ok" : d.sev === "warn" ? "warn" : "error");
+    $("dnTitle").textContent = "ลิงก์ดาวน์โหลดปัจจุบัน: " + sevIcon(d.sev) + d.title;
+    $("dnDetail").textContent = driveLines(d).map(([k, v]) => `${k}: ${v}`).join("\n");
+  }
+
   function logRow(cells, cls) {
     const tr = document.createElement("tr");
     for (const c of cells) {
@@ -309,7 +469,7 @@
       td.textContent = c.text;
       if (c.title) td.title = c.title;
       if (c.cls) td.className = c.cls;
-      if (cls === "empty") { td.className = "empty"; td.colSpan = 7; }
+      if (cls === "empty") { td.className = "empty"; td.colSpan = 9; }
       tr.appendChild(td);
     }
     return tr;
@@ -324,17 +484,25 @@
     if (!r.ok) { $("logErr").textContent = "โหลดประวัติไม่สำเร็จ"; show("logErr"); return; }
     hide("logErr");
     const { total, last24, items } = r.data;
-    $("logSum").textContent = `ทั้งหมด ${total} ครั้ง · 24 ชั่วโมงล่าสุด ${last24} ครั้ง · เก็บย้อนหลัง 90 วัน (บันทึกตอนระบบส่งลิงก์ให้ ไม่ได้ยืนยันว่าโหลดไฟล์จบ)`;
+    const bad = items.filter(isProblem).length;
+    $("logSum").textContent = `ทั้งหมด ${total} ครั้ง · 24 ชั่วโมงล่าสุด ${last24} ครั้ง · เก็บย้อนหลัง 90 วัน` + (bad ? ` · ⚠ พบปัญหา ${bad} รายการ (ในที่แสดงอยู่)` : "") +
+      ` — ผลตรวจ Google Drive บันทึกตอนส่งลิงก์ ส่วนผลตรวจไฟล์ที่โหลดมาจะขึ้นเมื่อผู้ใช้กดตรวจไฟล์ในหน้าเว็บ (เว็บรู้เองไม่ได้ว่าโหลดจบหรือไม่) · คลิกแถวเพื่อดูรายละเอียด`;
     if (!items.length) body.appendChild(logRow([{ text: "ยังไม่มีผู้ดาวน์โหลด" }], "empty"));
     for (const e of items) {
-      body.appendChild(logRow([
+      const main = logRow([
         { text: fmtTime(e.t) }, { text: e.ip || "-" },
         { text: [e.country, e.city].filter(Boolean).join(" · ") || "-" },
         { text: e.ua ? uaOS(e.ua) : "-", title: e.ua || "" },
         { text: e.ua ? uaBrowser(e.ua) : "-", title: e.ua || "" },
         { text: e.ver || "-" },
         e.clicked ? { text: "✅ กดดาวน์โหลดแล้ว", cls: "tag ok" } : { text: "⏳ ขอลิงก์ (ยังไม่กดโหลด)", cls: "tag wait" },
-      ]));
+        driveCell(e), verifyCell(e),
+      ]);
+      main.classList.add("lrow");
+      const det = detailRow(e);
+      det.hidden = !isProblem(e); // รายการที่มีปัญหาขยายรายละเอียดให้เห็นเลย รายการปกติคลิกเพื่อดู
+      main.addEventListener("click", () => { det.hidden = !det.hidden; });
+      body.append(main, det);
     }
     $("logMore").hidden = items.length >= total;
   }
@@ -342,7 +510,7 @@
   function openLogs() {
     logLimit = 100;
     $("logBody").replaceChildren(logRow([{ text: "กำลังโหลด..." }], "empty"));
-    $("logSum").textContent = ""; hide("logErr"); $("logMore").hidden = true;
+    $("logSum").textContent = ""; hide("logErr"); hide("driveNow"); $("logMore").hidden = true;
     show("logs"); loadLogs();
   }
 
@@ -416,6 +584,10 @@
   $("specBtn").addEventListener("click", openSpecs);
   $("specForm").addEventListener("submit", saveSpecs);
   $("logRefresh").addEventListener("click", loadLogs);
+  $("logCheck").addEventListener("click", checkDriveNow);
+  $("verifyBtn").addEventListener("click", openVerify);
+  $("vGo").addEventListener("click", runVerify);
+  $("vSkip").addEventListener("click", () => { vSkipMd5 = true; });
   $("logMore").addEventListener("click", () => { logLimit += 100; loadLogs(); });
   $("logClear").addEventListener("click", clearLogsAll);
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
@@ -427,7 +599,7 @@
     m.addEventListener("click", (e) => { if (down && e.target === m) hide(id); down = false; });
   }
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closePopup(); hide("login"); hide("logs"); hide("specsEdit"); hide("panel"); }
+    if (e.key === "Escape") { closePopup(); hide("verify"); hide("login"); hide("logs"); hide("specsEdit"); hide("panel"); }
   });
 
   // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
