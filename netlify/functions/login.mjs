@@ -7,9 +7,14 @@ export default async (req, ctx) => {
   const adminPass = process.env.ADMIN_PASSWORD;
   if (!adminPass || adminPass.length < 12) return json({ error: "not_configured" }, 500);
 
-  // จำกัด 8 ครั้ง / 15 นาที / IP
-  if (!(await rateLimit("login:" + clientIp(req, ctx), 8, 15 * 60 * 1000)))
-    return json({ error: "too_many" }, 429);
+  // จำกัด 8 ครั้ง / 15 นาที / IP และ 120 ครั้ง / 15 นาที รวมทุก IP (กันเดารหัสแบบกระจายหลาย IP)
+  // ถ้าอ่านที่เก็บข้อมูลไม่ได้ให้ปฏิเสธไว้ก่อน (fail-closed)
+  const win = 15 * 60 * 1000;
+  const [okIp, okAll] = await Promise.all([
+    rateLimit("login:" + clientIp(req, ctx), 8, win, { failClosed: true }),
+    rateLimit("login:all", 120, win, { failClosed: true }),
+  ]);
+  if (!okIp || !okAll) return json({ error: "too_many" }, 429);
 
   let body;
   try { body = await readJson(req, 1000); } catch { return json({ error: "bad_request" }, 400); }

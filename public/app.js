@@ -5,7 +5,7 @@
   { const l = document.createElement("link"); l.rel = "stylesheet";
     l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
     document.head.appendChild(l); }
-  let cfg = null, timer = null, popupRun = 0, saving = false, adminUi = false;
+  let cfg = null, timer = null, popupRun = 0, saving = false, adminUi = false, scan = null;
   const bc = "BroadcastChannel" in window ? new BroadcastChannel("trk-cfg") : null;
 
   async function api(path, method = "GET", body) {
@@ -299,6 +299,30 @@
   // รูปโหลดไม่ขึ้น (ถูกลบ/เน็ตมีปัญหา) : ซ่อนรูป โชว์ไอคอนแทน ไม่ให้เห็นกรอบรูปเสีย
   $("coverImg").addEventListener("error", () => { $("coverImg").hidden = true; $("coverHero").hidden = false; });
 
+  /* ---------- สถานะสแกนไวรัส (แสดงตามผลจริงจากเซิร์ฟเวอร์ ไม่มีข้อความตายตัว) ---------- */
+  const fmtDate = (t) => (t ? new Date(t).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium" }) : "");
+
+  function renderScan() {
+    const el = $("scanStat"), sub = $("scanSub"), s = scan;
+    let cls = "scan-none", t = "🛡 กำลังตรวจสอบสถานะ...", u = "";
+    if (s) {
+      const who = [s.tool, fmtDate(s.at)].filter(Boolean).join(" · ");
+      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 สแกนไวรัสแล้ว: ไม่พบภัย"; u = who + " · MD5 ตรงกับไฟล์บน Google Drive"; }
+      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 มีผลสแกน (ยังเทียบกับไฟล์บน Drive ไม่ได้)"; u = who; }
+      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ ไฟล์ถูกเปลี่ยนหลังสแกนล่าสุด"; u = "ยังไม่ได้สแกนไฟล์เวอร์ชันนี้"; }
+      else if (s.state === "infected") { cls = "scan-bad"; t = "⛔ พบมัลแวร์ในไฟล์ที่สแกน"; u = "กรุณาอย่าดาวน์โหลดจนกว่าผู้ดูแลจะแก้ไข"; }
+      else { t = "🛡 ยังไม่ได้สแกนไวรัส"; u = "ผู้ดูแลยังไม่ได้รายงานผลสแกน"; }
+      if (s.md5 && (s.state === "clean" || s.state === "unconfirmed")) u += "\nMD5: " + s.md5;
+    }
+    el.className = cls; el.textContent = t; sub.textContent = u;
+  }
+
+  async function loadScan() {
+    const r = await api("/api/scan");
+    scan = r.ok && r.data && r.data.state ? r.data : { state: "none" };
+    renderScan();
+  }
+
   /* ---------- Admin (เปิดหน้าต่างทันที แล้วค่อยโหลดข้อมูลเบื้องหลัง) ---------- */
   let adminHint = false, adminCfg = null;
   buildSpecInputs();
@@ -334,7 +358,37 @@
   async function refreshAdmin() {
     const r = await api("/api/admin-config");
     if (r.status === 401) { adminLost(); hide("panel"); openLogin(); return; }
-    if (r.ok) { adminGained(); adminCfg = r.data; fillForm(r.data); }
+    if (r.ok) { adminGained(); adminCfg = r.data; fillForm(r.data); loadScanAdmin(); }
+  }
+
+  // รายละเอียดผลสแกนสำหรับแอดมิน
+  async function loadScanAdmin() {
+    const r = await api("/api/admin-scan");
+    if (r.status === 401) { adminLost(); hide("panel"); openLogin(); return; }
+    const box = $("scanAd"), title = $("scanAdTitle"), det = $("scanAdDetail");
+    if (!r.ok) { box.className = "vres error"; title.textContent = "โหลดผลสแกนไม่สำเร็จ"; det.textContent = ""; return; }
+    const d = r.data, x = d.detail || {};
+    const names = { clean: "ไม่พบภัย และตรงกับไฟล์ปัจจุบัน ✅", unconfirmed: "มีผลสแกน แต่ยังเทียบกับไฟล์บน Drive ไม่ได้", outdated: "ไฟล์เปลี่ยนไปหลังสแกน (ต้องสแกนใหม่)", infected: "พบมัลแวร์ ⛔", none: "ยังไม่มีผลสแกน" };
+    box.className = "vres " + (d.state === "clean" ? "ok" : d.state === "infected" ? "error" : "warn");
+    title.textContent = names[d.state] || d.state;
+    const L = [];
+    if (d.state !== "none") {
+      L.push(`เครื่องมือ: ${d.tool || "-"} ${x.toolVersion || ""} ${x.engineVersion ? "(engine " + x.engineVersion + ")" : ""}`.trim());
+      L.push(`ฐานข้อมูลไวรัส: ${x.sigVersion || "-"}${d.sigDate ? " (" + d.sigDate + ")" : ""}`);
+      L.push(`สแกนเมื่อ: ${d.at ? new Date(d.at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" }) : "-"}`);
+      L.push(`ไฟล์: ${x.fileName || "-"} (${d.size ? (d.size / 1073741824).toFixed(2) + " GB" : "-"})`);
+      L.push(`MD5 ที่สแกน: ${d.md5 || "-"}`);
+      L.push(`MD5 บน Drive ตอนนี้: ${x.liveMd5 || (x.hasKey ? "(อ่านไม่ได้)" : "(ไม่ทราบ ต้องตั้ง GOOGLE_API_KEY)")}`);
+      if (d.detections && d.detections.length) L.push("พบ: " + d.detections.join(", "));
+    }
+    if (!d.tokenSet) L.push("⚠ ยังไม่ได้ตั้ง SCAN_REPORT_TOKEN ใน Netlify จึงยังรับผลสแกนจากสคริปต์ไม่ได้");
+    det.textContent = L.join("\n");
+  }
+
+  async function deleteScanRecord() {
+    if (!window.confirm("ลบผลสแกนไวรัส? หน้าเว็บจะกลับเป็น \"ยังไม่ได้สแกน\"")) return;
+    const r = await api("/api/admin-scan", "DELETE", {});
+    if (r.ok) { loadScanAdmin(); loadScan(); }
   }
 
   function openPanel() {
@@ -751,6 +805,7 @@
   $("loginForm").addEventListener("submit", doLogin);
   $("adminForm").addEventListener("submit", saveForm);
   $("logoutBtn").addEventListener("click", logout);
+  $("scanDel").addEventListener("click", deleteScanRecord);
   $("logBtn").addEventListener("click", openLogs);
   $("imgBtn").addEventListener("click", openImages);
   for (const slot of Object.keys(IMG_SLOTS)) {
@@ -797,6 +852,8 @@
 
   addEventListener("hashchange", handleAdminHash);
   loadConfig();
+  loadScan();
+  setInterval(() => { if (!document.hidden) loadScan(); }, 60000);
   initFx();
   handleAdminHash();
   // อุ่นเครื่องฟังก์ชันดาวน์โหลดล่วงหน้า ลดอาการหน่วงตอนกดครั้งแรก (ตอบ 405 ทันที ไม่แตะข้อมูลใด ๆ)

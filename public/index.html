@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/style.css">
+<script src="/guard.js"></script>
 </head>
 <body>
 <div id="cursor"></div><div id="cursorDot"></div>
@@ -46,7 +47,7 @@
     </div>
     <div class="two">
       <div class="stat"><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus">🟢 พร้อมใช้งาน (Ready)</b></div>
-      <div class="stat"><small>การตรวจสอบความปลอดภัย</small><b class="olive">🛡 สแกนไวรัสเรียบร้อย</b></div>
+      <div class="stat"><small>การตรวจสอบความปลอดภัย</small><b id="scanStat" class="scan-none">🛡 กำลังตรวจสอบสถานะ...</b><span id="scanSub" class="scan-sub"></span></div>
     </div>
     <button id="dlBtn" class="dl orb" type="button"><span id="dlText">🚀 พร้อมดาวน์โหลด (คลิกที่นี่)</span></button>
     <button id="verifyBtn" class="vbtn" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม (เทียบกับ Google Drive)</button>
@@ -153,6 +154,11 @@
           <label>ขนาดไฟล์<input id="fSize" type="text" required maxlength="20"></label>
         </div>
         <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
+      </fieldset>
+      <fieldset><legend>4. ผลสแกนไวรัสของไฟล์เกม</legend>
+        <div id="scanAd" class="vres"><b id="scanAdTitle">กำลังโหลด...</b><span id="scanAdDetail"></span></div>
+        <p class="hint left">ผลนี้มาจากการสแกนจริงด้วย Microsoft Defender หรือ ClamAV บนเครื่องของคุณ แล้วส่งเข้ามาด้วยสคริปต์ในโฟลเดอร์ tools (ดูวิธีใน README) หน้าเว็บจะขึ้นเขียว "สแกนแล้ว" ก็ต่อเมื่อ MD5 ของไฟล์ที่สแกนตรงกับไฟล์บน Drive เท่านั้น</p>
+        <button id="scanDel" class="vbtn" type="button">🗑 ลบผลสแกน (หน้าเว็บจะกลับเป็น "ยังไม่ได้สแกน")</button>
       </fieldset>
       <div id="saveErr" class="err" hidden></div>
       <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>

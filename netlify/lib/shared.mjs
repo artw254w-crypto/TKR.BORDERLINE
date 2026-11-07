@@ -53,6 +53,10 @@ export const json = (data, status = 200, headers = {}) =>
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+      "cross-origin-resource-policy": "same-origin",
       ...headers,
     },
   });
@@ -137,12 +141,13 @@ export async function readJson(req, max = 10000) {
 }
 
 // จำกัดจำนวนครั้งต่อ IP (ประมาณการ ไม่ atomic 100%)
-export async function rateLimit(key, max, windowMs) {
+// failClosed: ถ้าอ่านที่เก็บข้อมูลไม่ได้ ให้ "ปฏิเสธ" แทนที่จะปล่อยผ่าน (ใช้กับการล็อกอิน กันเลี่ยงด้วยการทำให้ที่เก็บข้อมูลล่ม)
+export async function rateLimit(key, max, windowMs, opts = {}) {
   const s = store();
   const k = "rl-" + sha(key).toString("hex");
   const now = Date.now();
   let rec = null;
-  try { rec = await s.get(k, { type: "json" }); } catch {}
+  try { rec = await s.get(k, { type: "json" }); } catch { if (opts.failClosed) return false; }
   if (!rec || now - rec.start > windowMs) rec = { start: now, count: 0 };
   rec.count++;
   try { await s.setJSON(k, rec); } catch {}
@@ -252,7 +257,7 @@ export const deleteImage = (slot, v) => store().delete(`img/${slot}/${v}`);
 const LOG_KEEP_MS = 90 * 24 * 60 * 60 * 1000; // เก็บย้อนหลัง 90 วัน แล้วลบอัตโนมัติ
 const logTs = (k) => Number(k.slice(4, 17));
 
-export async function logDownload(key, entry) { await store().setJSON("log/" + key, entry); }
+export async function logDownload(key, entry) { await store().setJSON("log/" + key, entry, { onlyIfNew: true }); }
 
 export async function markClicked(key) {
   const s = store(), k = "log/" + key;
@@ -312,3 +317,78 @@ export async function clearLogs() {
   const { blobs } = await s.list({ prefix: "log/" });
   await Promise.all(blobs.map((b) => s.delete(b.key).catch(() => {})));
 }
+
+// ---------- ผลสแกนไวรัส (ของจริง ผูกกับ MD5 ของไฟล์) ----------
+// การสแกนทำด้วยเครื่องมือจริง (Microsoft Defender / ClamAV) บนเครื่องผู้ดูแล แล้วส่งผลเข้ามาที่ /api/scan-report
+// (ดู tools/scan-and-report.ps1) เว็บ "ไม่เคยโชว์ว่าสแกนแล้ว" ถ้าไม่มีผลสแกนจริง และจะโชว์เขียวก็ต่อเมื่อ
+// MD5 ของไฟล์ที่สแกนตรงกับ MD5 ของไฟล์ปัจจุบันบน Google Drive (ต้องตั้ง GOOGLE_API_KEY เพื่อให้เทียบได้)
+export async function getScan() { try { return await store().get("scan/latest", { type: "json" }); } catch { return null; } }
+export async function saveScan(rec) { await store().setJSON("scan/latest", rec); }
+export async function deleteScan() { await store().delete("scan/latest"); }
+
+const cleanStr = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
+const isHex = (v, n) => typeof v === "string" && new RegExp(`^[a-f0-9]{${n}}$`).test(v);
+
+export function validateScanReport(b) {
+  if (!b || typeof b !== "object") return { error: "bad_request" };
+  const md5 = String(b.md5 || "").toLowerCase(), sha256 = String(b.sha256 || "").toLowerCase();
+  if (!isHex(md5, 32)) return { error: "md5 ต้องเป็นเลขฐานสิบหก 32 ตัว" };
+  if (sha256 && !isHex(sha256, 64)) return { error: "sha256 ไม่ถูกต้อง" };
+  if (b.result !== "clean" && b.result !== "infected") return { error: "result ต้องเป็น clean หรือ infected" };
+  const size = Number(b.size);
+  if (!Number.isFinite(size) || size <= 0) return { error: "size ไม่ถูกต้อง" };
+  const tool = cleanStr(b.tool, 60);
+  if (!tool) return { error: "ต้องระบุชื่อเครื่องมือสแกน (tool)" };
+  const detections = Array.isArray(b.detections) ? b.detections.slice(0, 20).map((d) => cleanStr(d, 120)).filter(Boolean) : [];
+  if (b.result === "infected" && detections.length === 0) detections.push("(ไม่ระบุชื่อภัย)");
+  return {
+    value: {
+      result: b.result, md5, sha256, size, tool, detections,
+      toolVersion: cleanStr(b.toolVersion, 40), engineVersion: cleanStr(b.engineVersion, 40),
+      sigVersion: cleanStr(b.sigVersion, 40), sigDate: cleanStr(b.sigDate, 40),
+      fileName: cleanStr(b.fileName, 200),
+    },
+  };
+}
+
+// คืนสถานะที่ "พิสูจน์ได้" : clean | unconfirmed | outdated | infected | none
+const SCAN_TTL_MS = 60 * 1000;
+let scanCache = null;
+export async function scanStatus(cfg, { fresh = false } = {}) {
+  if (!fresh && scanCache && Date.now() - scanCache.at < SCAN_TTL_MS && scanCache.url === cfg.fileUrl) return scanCache.val;
+  const rec = await getScan();
+  let val;
+  if (!rec) {
+    val = { state: "none", detail: { hasKey: !!process.env.GOOGLE_API_KEY } };
+  } else {
+    const id = extractFileId(cfg.fileUrl).id || "";
+    let liveMd5 = "", liveSize = null;
+    try {
+      const live = await probeDriveCached(cfg.fileUrl, { timeoutMs: 4000, fresh });
+      liveMd5 = live.md5 || ""; liveSize = live.size;
+    } catch {}
+    // เทียบกับไฟล์ปัจจุบัน: true = ตรงกัน, false = คนละไฟล์/ถูกเปลี่ยน, null = ยืนยันไม่ได้
+    let match = null;
+    if (id && rec.fileId && id !== rec.fileId) match = false;
+    else if (liveMd5) match = liveMd5 === rec.md5 && (liveSize == null || liveSize === rec.size);
+    let state;
+    if (match === false) state = "outdated";
+    else if (rec.result === "infected") state = "infected";
+    else if (match === true) state = "clean";
+    else state = "unconfirmed";
+    val = {
+      state, tool: rec.tool, at: rec.at, sigDate: rec.sigDate, md5: rec.md5, size: rec.size,
+      detections: rec.detections || [],
+      detail: { match, liveMd5, hasKey: !!process.env.GOOGLE_API_KEY, fileName: rec.fileName, sha256: rec.sha256,
+        toolVersion: rec.toolVersion, engineVersion: rec.engineVersion, sigVersion: rec.sigVersion },
+    };
+  }
+  scanCache = { at: Date.now(), url: cfg.fileUrl, val };
+  return val;
+}
+export const clearScanCache = () => { scanCache = null; };
+// ส่วนที่เปิดเผยต่อสาธารณะ (ไม่ส่งรายละเอียดภายใน)
+export const publicScan = (v) => ({
+  state: v.state, tool: v.tool || "", at: v.at || 0, sigDate: v.sigDate || "",
+  md5: v.state === "clean" || v.state === "unconfirmed" ? v.md5 || "" : "",
+});
