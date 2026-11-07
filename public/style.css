@@ -149,3 +149,57 @@ label.chk small{display:block;margin-top:2px;color:var(--mute);font-size:10px}
 .imgprev{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:10px;border:1px solid var(--bd);background:#020617;display:grid;place-items:center;margin-bottom:10px;color:var(--mute);font-size:11px;text-align:center;padding:8px}
 .imgprev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .imgslot .btns{flex-wrap:wrap;gap:8px}.imgslot .btn{flex:1 1 130px;padding:10px;font-size:12px}
+
+/* ===================== โทรศัพท์ / จอสัมผัส ===================== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh}
+body:has(.modal:not([hidden])){overflow:hidden}            /* เปิดหน้าต่างแล้วหน้าเว็บด้านหลังไม่เลื่อนตาม */
+.modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.top{padding-top:calc(12px + env(safe-area-inset-top))}
+.foot{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.modal{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.gear{width:40px;height:40px;font-size:18px}                /* ปุ่มกดได้ง่ายขึ้น (ขั้นต่ำ ~40px) */
+.x{min-width:40px;min-height:40px}
+.opt input{width:20px;height:20px}
+.phead{flex-wrap:wrap;gap:8px}
+.phead>div{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+
+@media(max-width:640px){
+  .top{padding-bottom:10px}
+  .brand{font-size:14px;gap:8px;letter-spacing:.02em}.logo{width:32px;height:32px}
+  .bar-r{gap:8px}.badge{font-size:11px;padding:4px 10px}
+  main.grid{gap:16px;padding-top:16px;padding-bottom:20px}
+  .card{padding:18px 16px;border-radius:14px}
+  .cover{aspect-ratio:2/1;margin-bottom:14px}.hero{font-size:48px}
+  h1{font-size:20px}
+  .desc,.story,.guide{font-size:13px}.n-desc{font-size:13px}
+  .row{flex-wrap:wrap;gap:4px 10px;padding:12px;font-size:13px}.row b{text-align:right}
+  .notice{padding:14px}
+  .dl{min-height:58px;padding:16px;font-size:16px}
+  .vbtn{padding:14px;font-size:13px}
+  .foot .bar{justify-content:center;text-align:center}
+  .link{min-height:40px;padding:8px}
+  /* ช่องกรอกขนาด 16px: iOS จะไม่ซูมหน้าเว็บเองตอนแตะช่องกรอก */
+  input[type=text],input[type=url],input[type=password],input[type=number],textarea{font-size:16px;padding:12px}
+  .btn{min-height:48px;padding:14px;font-size:14px}
+  .btns.end{flex-wrap:wrap}.btns.end .btn{flex:1 1 140px}
+  .opt{padding:14px}.opt small{font-size:11px}
+  .modal{padding:12px}
+  .box{padding:20px 16px}
+  /* หน้าต่างแอดมินขนาดใหญ่ = เต็มจอ มีแถบหัวติดด้านบนตลอด */
+  .modal:has(.box.wide),.modal:has(.box.xwide){padding:0}
+  .box.wide,.box.xwide{max-width:none;min-height:100dvh;margin:0;border:0;border-radius:0;box-shadow:none;padding:0 14px calc(24px + env(safe-area-inset-bottom))}
+  .box.wide .phead,.box.xwide .phead{position:sticky;top:0;z-index:5;margin:0 -14px 14px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;background:var(--card)}
+  .phead>div{width:100%}
+  .phead .link{padding:8px 12px;border:1px solid var(--bd);border-radius:999px;font-size:12px;min-height:36px}
+  .phead .x.static{margin-left:auto}
+  .logwrap{max-height:calc(100dvh - 300px);min-height:180px}
+  .logwrap th,.logwrap td{padding:10px 12px;font-size:12px}
+  .imgslot .btn{flex:1 1 100%}
+}
+@media(max-width:420px){
+  #popup .btns{flex-direction:column-reverse}             /* ปุ่มหลัก (เริ่มดาวน์โหลด) อยู่บน กดง่ายด้วยนิ้วโป้ง */
+  #popup .btn{width:100%}
+  .brand span:last-child{max-width:150px;line-height:1.15}
+}

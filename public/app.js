@@ -721,9 +721,11 @@
 
     const cv = $("bg"), ctx = cv.getContext("2d");
     let w = (cv.width = innerWidth), h = (cv.height = innerHeight);
-    addEventListener("resize", () => { w = cv.width = innerWidth; h = cv.height = innerHeight; });
+    // มือถือ: แถบ URL ขึ้น/ลงทำให้ความสูงเปลี่ยนรัว ๆ จึงปรับขนาดเฉพาะตอนความกว้างเปลี่ยน (หมุนจอ) ไม่ล้างภาพทุกครั้ง
+    addEventListener("resize", () => { if (innerWidth !== w) { w = cv.width = innerWidth; h = cv.height = innerHeight; } });
+    const coarse = matchMedia("(pointer: coarse)").matches; // จอสัมผัส: ลดจำนวนจุดเพื่อประหยัดแบต
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const ps = Array.from({ length: Math.min(Math.floor(w / 40), 28) }, () => ({
+    const ps = Array.from({ length: Math.min(Math.floor(w / 40), coarse ? 12 : 28) }, () => ({
       x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
       r: Math.random() * 2 + 1, c: Math.random() > 0.5 ? "#65a30d" : "#facc15", a: Math.random() * 0.5 + 0.2,
     }));
