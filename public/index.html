@@ -19,7 +19,7 @@
     <div class="brand orb"><span class="logo">🎯</span><span>T.R.K : <b>BORDER LINE</b></span></div>
     <div class="bar-r">
       <div id="hBadge" class="badge"><span class="dot pulse"></span><span id="hStatus">SERVER ONLINE</span></div>
-      <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ">⚙</button>
+      <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ" hidden>⚙</button>
     </div>
   </div>
 </header>
@@ -27,7 +27,7 @@
 <main class="wrap grid">
   <section class="card left">
     <div class="topline"></div>
-    <div class="cover"><span class="hero">🪖</span><span class="build orb">BUILD 2026.1</span></div>
+    <div class="cover"><img id="coverImg" class="cover-img" alt="" decoding="async" hidden><span id="coverHero" class="hero" hidden>🎯</span><span class="build orb">BUILD 2026.1</span></div>
     <h1 id="title" class="orb">T.R.K : BORDER LINE</h1>
     <p id="subtitle" class="desc">เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์</p>
     <p class="story">ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม</p>
@@ -73,7 +73,7 @@
 <footer class="foot">
   <div class="wrap bar">
     <span>© 2026 PIXEL TECH SOFT Co., Ltd. All Rights Reserved.</span>
-    <button id="footAdmin" class="link" type="button">🔒 เข้าสู่ระบบ Admin</button>
+    <button id="footAdmin" class="link" type="button" hidden>⚙ แผงแอดมิน</button>
   </div>
 </footer>
 
@@ -120,6 +120,7 @@
     <p class="desc">กรอกรหัสผ่านเพื่อเข้าสู่แผงควบคุมระบบ</p></div>
     <form id="loginForm" autocomplete="off">
       <label>รหัสผ่านแอดมิน<input id="pass" type="password" required maxlength="200" autocomplete="current-password"></label>
+      <label class="chk"><input id="remember" type="checkbox" checked><span>จดจำเครื่องนี้ 30 วัน (เข้าครั้งหน้าไม่ต้องใส่รหัสอีก)<small>ไม่ควรติ๊กบนเครื่องสาธารณะหรือเครื่องที่ใช้ร่วมกับคนอื่น</small></span></label>
       <div id="loginErr" class="err" hidden></div>
       <button class="btn full" type="submit">ยืนยันเข้าสู่ระบบ</button>
     </form>
@@ -130,7 +131,7 @@
 <div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
   <div class="box wide">
     <div class="phead"><h3 id="panelTitle" class="orb">ADMIN PANEL</h3>
-      <div><button id="specBtn" class="link" type="button">🖥 สเปคเครื่อง</button> <button id="logBtn" class="link" type="button">📋 ประวัติดาวน์โหลด</button> <button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
+      <div><button id="specBtn" class="link" type="button">🖥 สเปคเครื่อง</button> <button id="imgBtn" class="link" type="button">🖼 รูปภาพ</button> <button id="logBtn" class="link" type="button">📋 ประวัติดาวน์โหลด</button> <button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
       <button class="x static" data-close="panel" type="button" aria-label="ปิด">✕</button></div></div>
     <form id="adminForm" autocomplete="off">
       <fieldset><legend>1. สถานะการดาวน์โหลด</legend>
@@ -156,6 +157,33 @@
       <div class="btns end"><button class="btn ghost" data-close="panel" type="button">ปิด</button><button class="btn" type="submit">💾 บันทึก</button></div>
     </form>
     <p class="hint">เปลี่ยนรหัสผ่านแอดมินได้ที่ Netlify → Site settings → Environment variables (ADMIN_PASSWORD)</p>
+  </div>
+</div>
+
+<!-- Images editor (admin only): อัปโหลดรูปกรอบหน้าปก + รูปพื้นหลังเว็บ -->
+<div id="images" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="imgTitle">
+  <div class="box wide">
+    <div class="phead"><h3 id="imgTitle" class="orb">IMAGES</h3>
+      <button class="x static" data-close="images" type="button" aria-label="ปิด">✕</button></div>
+    <p class="desc">เลือกรูปจากเครื่องได้เลย ระบบย่อและบีบอัดให้อัตโนมัติ ไม่ต้องแก้ไฟล์ และรูปบนเว็บจะเปลี่ยนทันทีหลังอัปโหลดเสร็จ</p>
+    <div class="imgslots">
+      <section class="imgslot">
+        <h4>🖼 รูปในกรอบหน้าปก</h4>
+        <p class="hint">กรอบสัดส่วน 16:9 (แนะนำ 1280×720) ส่วนที่เกินสัดส่วนจะถูกตัดตรงกลาง</p>
+        <div class="imgprev"><img id="prevCover" alt="" hidden><span id="emptyCover">ยังไม่มีรูป</span></div>
+        <input id="fileCover" type="file" accept="image/*" hidden>
+        <div class="btns"><button id="upCover" class="btn" type="button">⬆ อัปโหลดรูปใหม่</button><button id="delCover" class="btn ghost" type="button">↩ กลับเป็นรูปเริ่มต้น</button></div>
+        <div id="msgCover" class="vres" hidden><span></span></div>
+      </section>
+      <section class="imgslot">
+        <h4>🌄 รูปพื้นหลังเว็บ</h4>
+        <p class="hint">รูปแนวนอนความละเอียดสูง (แนะนำ 1920×1080) ระบบจะทำให้มืดลงอัตโนมัติเพื่อให้อ่านตัวหนังสือง่าย</p>
+        <div class="imgprev"><img id="prevBg" alt="" hidden><span id="emptyBg">ยังไม่มีรูป (พื้นหลังสีเข้มปกติ)</span></div>
+        <input id="fileBg" type="file" accept="image/*" hidden>
+        <div class="btns"><button id="upBg" class="btn" type="button">⬆ อัปโหลดรูปใหม่</button><button id="delBg" class="btn ghost" type="button">🗑 ลบรูปพื้นหลัง</button></div>
+        <div id="msgBg" class="vres" hidden><span></span></div>
+      </section>
+    </div>
   </div>
 </div>
 

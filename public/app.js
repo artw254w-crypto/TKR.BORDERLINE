@@ -106,6 +106,7 @@
     $("dlBtn").disabled = !on;
     $("dlText").textContent = on ? "🚀 พร้อมดาวน์โหลด (คลิกที่นี่)" : "🔒 ระบบปิดปรับปรุงชั่วคราว";
     renderSpecs(cfg.specs);
+    applyImages(cfg.img);
   }
 
   async function loadConfig() {
@@ -274,9 +275,42 @@
     else vResult("error", "ตรวจไฟล์ไม่สำเร็จ", verifyErr(r));
   }
 
+  /* ---------- รูปกรอบหน้าปก + รูปพื้นหลัง (อัปโหลดจากแผงแอดมิน) ---------- */
+  // รูปอยู่ที่ /api/image/<ช่อง>/<แฮช> (เปลี่ยนรูป = แฮชเปลี่ยน = เบราว์เซอร์ดึงใหม่เอง) ไม่มีรูปที่อัปโหลด = ใช้ค่าเริ่มต้น
+  // ตั้งรูปพื้นหลังผ่านตัวแปร CSS (--bg-img) ด้วย CSSOM ซึ่ง CSP ที่เข้มงวดอนุญาต (ไม่ใช้ inline style)
+  const IMG_CACHE = "trk_imgs", COVER_DEFAULT = "/cover-default.jpg";
+  const imgUrl = (slot, v) => (v ? `/api/image/${slot}/${v}` : "");
+  function paintImages(cover, bg) {
+    const el = $("coverImg");
+    if (el.getAttribute("src") !== cover) { el.hidden = false; $("coverHero").hidden = true; el.src = cover; }
+    document.documentElement.style.setProperty("--bg-img", bg ? `url("${bg}")` : "none");
+  }
+  function applyImages(img) {
+    const cover = imgUrl("cover", img && img.cover) || COVER_DEFAULT, bg = imgUrl("bg", img && img.bg);
+    paintImages(cover, bg);
+    try { localStorage.setItem(IMG_CACHE, JSON.stringify({ cover, bg })); } catch {}
+  }
+  // รูปเดิมที่เคยโหลดไว้ แสดงทันทีตอนเปิดหน้า (ไม่ต้องรอ /api/config) แล้วค่อยยืนยันกับเซิร์ฟเวอร์
+  try {
+    const c = JSON.parse(localStorage.getItem(IMG_CACHE) || "null");
+    if (c && typeof c.cover === "string" && c.cover.startsWith("/") && (!c.bg || (typeof c.bg === "string" && c.bg.startsWith("/api/image/")))) paintImages(c.cover, c.bg || "");
+  } catch {}
+  // รูปโหลดไม่ขึ้น (ถูกลบ/เน็ตมีปัญหา) : ซ่อนรูป โชว์ไอคอนแทน ไม่ให้เห็นกรอบรูปเสีย
+  $("coverImg").addEventListener("error", () => { $("coverImg").hidden = true; $("coverHero").hidden = false; });
+
   /* ---------- Admin (เปิดหน้าต่างทันที แล้วค่อยโหลดข้อมูลเบื้องหลัง) ---------- */
   let adminHint = false, adminCfg = null;
   buildSpecInputs();
+
+  // เครื่องแอดมิน: ปุ่มเฟือง/ลิงก์ footer ซ่อนไว้สำหรับทุกคน และโชว์เฉพาะเครื่องที่เซิร์ฟเวอร์ยืนยันว่าเป็นแอดมิน
+  // "trk_admin" ใน localStorage เป็นแค่ข้อสังเกตว่าเครื่องนี้เคยล็อกอินแอดมิน (ไม่ใช่รหัสผ่าน/โทเคน ปลอมได้แต่ไม่ได้อะไร
+  // เพราะทุก API แอดมินตรวจเซสชันที่เซิร์ฟเวอร์) ผู้ใช้ทั่วไปจึงไม่เห็นเฟืองและไม่ยิงคำขอตรวจเซสชันเลย
+  const HINT_KEY = "trk_admin";
+  const setHint = (on) => { try { on ? localStorage.setItem(HINT_KEY, "1") : localStorage.removeItem(HINT_KEY); } catch {} };
+  const hasHint = () => { try { return localStorage.getItem(HINT_KEY) === "1"; } catch { return false; } };
+  function showAdminUi(on) { $("gearBtn").hidden = !on; $("footAdmin").hidden = !on; }
+  function adminGained() { adminHint = true; setHint(true); showAdminUi(true); }
+  function adminLost() { adminHint = false; adminCfg = null; setHint(false); showAdminUi(false); }
 
   function openLogin() {
     $("pass").value = ""; hide("loginErr"); show("login");
@@ -292,8 +326,8 @@
 
   async function refreshAdmin() {
     const r = await api("/api/admin-config");
-    if (r.status === 401) { adminHint = false; adminCfg = null; hide("panel"); openLogin(); return; }
-    if (r.ok) { adminHint = true; adminCfg = r.data; fillForm(r.data); }
+    if (r.status === 401) { adminLost(); hide("panel"); openLogin(); return; }
+    if (r.ok) { adminGained(); adminCfg = r.data; fillForm(r.data); }
   }
 
   function openPanel() {
@@ -307,10 +341,10 @@
     e.preventDefault();
     const btn = $("loginForm").querySelector('button[type="submit"]');
     btn.disabled = true; btn.textContent = "กำลังตรวจสอบ...";
-    const r = await api("/api/login", "POST", { password: $("pass").value });
+    const r = await api("/api/login", "POST", { password: $("pass").value, remember: $("remember").checked });
     $("pass").value = "";
     btn.disabled = false; btn.textContent = "ยืนยันเข้าสู่ระบบ";
-    if (r.ok) { adminHint = true; hide("login"); openPanel(); return; }
+    if (r.ok) { adminGained(); hide("login"); openPanel(); return; }
     const msg = r.status === 429 ? "ลองผิดหลายครั้งเกินไป กรุณารอ 15 นาที"
       : r.status === 500 ? "เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า ADMIN_PASSWORD / SESSION_SECRET"
       : "รหัสผ่านไม่ถูกต้อง";
@@ -328,7 +362,7 @@
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
-    if (r.status === 401) { adminHint = false; hide("panel"); return openLogin(); }
+    if (r.status === 401) { adminLost(); hide("panel"); return openLogin(); }
     if (!r.ok) { $("saveErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("saveErr"); return; }
     adminCfg = r.data;
     show("saveOk");
@@ -353,7 +387,7 @@
     let r = { ok: false, status: 0, data: {} };
     if (base) r = await api("/api/admin-config", "PUT", { ...base, specs: readSpecInputs() });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
-    if (r.status === 401) { adminHint = false; adminCfg = null; hide("specsEdit"); hide("panel"); return openLogin(); }
+    if (r.status === 401) { adminLost(); hide("specsEdit"); hide("panel"); return openLogin(); }
     if (!r.ok) { $("specErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("specErr"); return; }
     adminCfg = r.data;
     show("specOk");
@@ -454,7 +488,7 @@
     btn.disabled = true; box.className = "vres"; $("dnTitle").textContent = "กำลังตรวจ Google Drive..."; $("dnDetail").textContent = ""; box.hidden = false;
     const r = await api("/api/admin-log?check=1");
     btn.disabled = false;
-    if (r.status === 401) { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); return openLogin(); }
+    if (r.status === 401) { adminLost(); hide("logs"); hide("panel"); return openLogin(); }
     if (!r.ok || !r.data.drive) { box.className = "vres error"; $("dnTitle").textContent = "ตรวจ Google Drive ไม่สำเร็จ"; $("dnDetail").textContent = "เซิร์ฟเวอร์ตรวจไม่ได้ ลองใหม่อีกครั้ง"; return; }
     const d = r.data.drive;
     box.className = "vres " + (d.sev === "ok" ? "ok" : d.sev === "warn" ? "warn" : "error");
@@ -479,7 +513,7 @@
     $("logRefresh").disabled = true;
     const r = await api("/api/admin-log?limit=" + logLimit);
     $("logRefresh").disabled = false;
-    if (r.status === 401) { adminHint = false; adminCfg = null; hide("logs"); hide("panel"); return openLogin(); }
+    if (r.status === 401) { adminLost(); hide("logs"); hide("panel"); return openLogin(); }
     const body = $("logBody"); body.replaceChildren();
     if (!r.ok) { $("logErr").textContent = "โหลดประวัติไม่สำเร็จ"; show("logErr"); return; }
     hide("logErr");
@@ -520,12 +554,140 @@
     if (r.ok) loadLogs(); else { $("logErr").textContent = "ล้างประวัติไม่สำเร็จ"; show("logErr"); }
   }
 
-  function logout() { adminHint = false; adminCfg = null; hide("logs"); hide("specsEdit"); hide("panel"); api("/api/logout", "POST", {}); }
+  /* ---------- แอดมิน: อัปโหลด/ลบรูปหน้าปกและพื้นหลัง ---------- */
+  // ย่อรูปในเครื่องก่อนส่ง (ด้านยาวสุดไม่เกินค่าที่กำหนด แล้วบันทึกเป็น JPEG) ผู้ใช้เลือกรูปจากมือถือ/กล้องขนาดหลายสิบ MB ได้เลย
+  // ได้ไฟล์เล็กพอสำหรับเพดาน 4 MB ของเซิร์ฟเวอร์ และตัดข้อมูลแปลกปลอมในไฟล์ (EXIF/GPS) ทิ้งไปด้วย
+  const IMG_SLOTS = { cover: { Name: "Cover", max: 1600 }, bg: { Name: "Bg", max: 2560 } };
+  const IMG_LIMIT = 3.6 * 1024 * 1024; // เหลือส่วนต่างจากเพดานเซิร์ฟเวอร์ 4 MB
+  const fmtKB = (n) => (n >= 1048576 ? (n / 1048576).toFixed(2) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
 
-  // เช็กเงียบ ๆ ว่ามีเซสชันแอดมินอยู่แล้วไหม (เพื่อให้กดเฟืองแล้วเข้าแผงได้ทันที)
+  async function decodeImage(file) {
+    try { return await createImageBitmap(file, { imageOrientation: "from-image" }); } catch {}
+    try { return await createImageBitmap(file); } catch {}
+    // เบราว์เซอร์เก่า: อ่านผ่าน data: URL (CSP อนุญาต data: แต่ไม่อนุญาต blob:)
+    const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
+    return await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url; });
+  }
+
+  async function prepareImage(file, maxSide) {
+    // SVG เป็นภาพเวกเตอร์ ไม่มีขนาดพิกเซลแน่นอน วาดลงแคนวาสแล้วจะได้รูปเล็กเบลอ จึงไม่รับ (ให้ใช้ JPG/PNG/WebP)
+    if (file.type === "image/svg+xml" || /\.svgz?$/i.test(file.name)) throw new Error("svg");
+    const src = await decodeImage(file);
+    const w0 = src.width, h0 = src.height;
+    if (!w0 || !h0) throw new Error("decode");
+    const k = Math.min(1, maxSide / Math.max(w0, h0));
+    const w = Math.max(1, Math.round(w0 * k)), h = Math.max(1, Math.round(h0 * k));
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#0a0d08"; g.fillRect(0, 0, w, h); // PNG โปร่งใสจะวางบนสีพื้นเข้มของเว็บ
+    g.imageSmoothingQuality = "high"; g.drawImage(src, 0, 0, w, h);
+    if (src.close) src.close();
+    for (const q of [0.86, 0.74, 0.62, 0.5, 0.4]) {
+      const blob = await new Promise((r) => cv.toBlob(r, "image/jpeg", q));
+      if (blob && blob.size <= IMG_LIMIT) return { blob, w, h };
+    }
+    throw new Error("too_large");
+  }
+
+  function slotMsg(slot, level, text) {
+    const box = $("msg" + IMG_SLOTS[slot].Name);
+    box.className = "vres " + (level || "");
+    box.firstElementChild.textContent = text || "";
+    box.hidden = !text;
+  }
+  function slotBusy(slot, on) {
+    const n = IMG_SLOTS[slot].Name;
+    $("up" + n).disabled = on; $("del" + n).disabled = on || !(cfg && cfg.img && cfg.img[slot]);
+  }
+  function renderImagePrev() {
+    for (const slot of Object.keys(IMG_SLOTS)) {
+      const n = IMG_SLOTS[slot].Name, v = cfg && cfg.img && cfg.img[slot];
+      const src = imgUrl(slot, v) || (slot === "cover" ? COVER_DEFAULT : "");
+      const im = $("prev" + n);
+      if (src) { if (im.getAttribute("src") !== src) im.src = src; im.hidden = false; } else { im.removeAttribute("src"); im.hidden = true; }
+      $("empty" + n).hidden = !!src;
+      $("del" + n).disabled = !v;
+    }
+  }
+  function openImages() {
+    if (!adminHint) return openLogin();
+    for (const slot of Object.keys(IMG_SLOTS)) slotMsg(slot, "", "");
+    renderImagePrev(); show("images");
+  }
+
+  async function sendImage(slot, method, blob) {
+    try {
+      const res = await fetch("/api/admin-image?slot=" + slot, {
+        method, cache: "no-store", credentials: "same-origin",
+        headers: blob ? { "content-type": blob.type || "image/jpeg" } : {}, body: blob || undefined,
+      });
+      let data = null; try { data = await res.json(); } catch {}
+      return { ok: res.ok, status: res.status, data: data || {} };
+    } catch { return { ok: false, status: 0, data: {} }; }
+  }
+  const imgErr = (r) => r.status === 0 ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"
+    : r.status === 413 ? "รูปใหญ่เกินที่เซิร์ฟเวอร์รับได้ (4 MB) ลองรูปที่เล็กลง"
+    : r.status === 415 ? "ชนิดไฟล์ไม่รองรับ (รับเฉพาะ JPEG / PNG / WebP)"
+    : r.status === 429 ? "อัปโหลดบ่อยเกินไป กรุณารอสักครู่"
+    : r.status === 403 ? "คำขอถูกปฏิเสธ (ตรวจว่าเปิดเว็บจากที่อยู่เดียวกับที่ล็อกอิน)"
+    : "อัปโหลดไม่สำเร็จ (" + (r.data.error || "HTTP " + r.status) + ")";
+  function imgApplied(img) {
+    cfg = { ...cfg, img }; render(); renderImagePrev();
+    if (bc) bc.postMessage({ cfg });
+  }
+  function imgSessionLost() { adminLost(); hide("images"); hide("panel"); openLogin(); }
+
+  async function uploadImage(slot, file) {
+    if (!file) return;
+    slotBusy(slot, true); slotMsg(slot, "warn", "กำลังประมวลผลรูป...");
+    let prep;
+    try { prep = await prepareImage(file, IMG_SLOTS[slot].max); }
+    catch (e) {
+      slotBusy(slot, false);
+      slotMsg(slot, "error", e.message === "too_large" ? "รูปนี้ยังใหญ่เกินไปแม้บีบอัดสุดแล้ว ลองรูปอื่นหรือรูปที่เล็กลง"
+        : e.message === "svg" ? "ไม่รองรับไฟล์ SVG กรุณาใช้รูป JPG, PNG หรือ WebP"
+        : "เปิดรูปนี้ไม่ได้ (ไม่ใช่ไฟล์รูปภาพ หรือไฟล์เสียหาย)");
+      return;
+    }
+    slotMsg(slot, "warn", `กำลังอัปโหลด ${prep.w}×${prep.h} (${fmtKB(prep.blob.size)})...`);
+    const r = await sendImage(slot, "PUT", prep.blob);
+    slotBusy(slot, false);
+    if (r.status === 401) return imgSessionLost();
+    if (!r.ok) { slotMsg(slot, "error", imgErr(r)); return; }
+    imgApplied(r.data.img);
+    slotMsg(slot, "ok", `อัปโหลดแล้ว ${prep.w}×${prep.h} · ${fmtKB(prep.blob.size)} รูปบนเว็บเปลี่ยนเรียบร้อย`);
+  }
+
+  async function removeImage(slot) {
+    if (!window.confirm(slot === "cover" ? "กลับไปใช้รูปเริ่มต้นของกรอบหน้าปก?" : "ลบรูปพื้นหลัง? (จะกลับเป็นพื้นหลังสีเข้มปกติ)")) return;
+    slotBusy(slot, true); slotMsg(slot, "warn", "กำลังลบ...");
+    const r = await sendImage(slot, "DELETE");
+    slotBusy(slot, false);
+    if (r.status === 401) return imgSessionLost();
+    if (!r.ok) { slotMsg(slot, "error", imgErr(r)); return; }
+    imgApplied(r.data.img);
+    slotMsg(slot, "ok", slot === "cover" ? "กลับเป็นรูปเริ่มต้นแล้ว" : "ลบรูปพื้นหลังแล้ว");
+  }
+
+  function logout() { adminLost(); hide("logs"); hide("images"); hide("specsEdit"); hide("panel"); api("/api/logout", "POST", {}); }
+
+  // เครื่องที่เคยล็อกอินแอดมิน: โชว์เฟืองทันที (กันกระพริบ) แล้วถามเซิร์ฟเวอร์ว่าเซสชันยังใช้ได้ไหม
+  // ถ้าเซิร์ฟเวอร์บอกว่าไม่ใช่แอดมินแล้ว (หมดอายุ/ออกจากระบบ/เปลี่ยนรหัสผ่านแล้ว) ก็ซ่อนเฟืองและลืมเครื่องนี้
+  // ถ้าติดต่อเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์) ยังคงสถานะเดิมไว้ ไม่ถือว่าหลุด
   async function refreshAdminQuiet() {
-    const r = await api("/api/admin-config");
-    if (r.ok) { adminHint = true; adminCfg = r.data; }
+    if (!hasHint()) return;
+    showAdminUi(true);
+    const r = await api("/api/session");
+    if (r.ok && r.data.admin) adminGained();
+    else if (r.ok) adminLost();
+  }
+
+  // ทางเข้าลับ: เปิดเว็บด้วย /#admin (เครื่องที่จำไว้แล้วเข้าแผงได้เลย เครื่องใหม่ขึ้นหน้ากรอกรหัส)
+  async function handleAdminHash() {
+    if (location.hash !== "#admin") return;
+    history.replaceState(null, "", location.pathname + location.search); // ไม่ทิ้ง #admin ไว้ใน URL
+    const r = await api("/api/session");
+    if (r.ok && r.data.admin) { adminGained(); openPanel(); } else openLogin();
   }
 
   /* ---------- เมาส์ + พื้นหลัง ---------- */
@@ -581,6 +743,13 @@
   $("adminForm").addEventListener("submit", saveForm);
   $("logoutBtn").addEventListener("click", logout);
   $("logBtn").addEventListener("click", openLogs);
+  $("imgBtn").addEventListener("click", openImages);
+  for (const slot of Object.keys(IMG_SLOTS)) {
+    const n = IMG_SLOTS[slot].Name;
+    $("up" + n).addEventListener("click", () => $("file" + n).click());
+    $("file" + n).addEventListener("change", (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; uploadImage(slot, f); });
+    $("del" + n).addEventListener("click", () => removeImage(slot));
+  }
   $("specBtn").addEventListener("click", openSpecs);
   $("specForm").addEventListener("submit", saveSpecs);
   $("logRefresh").addEventListener("click", loadLogs);
@@ -593,13 +762,13 @@
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
   // คลิกที่ว่างนอกกล่อง (พื้นหลังมืด) ของหน้าต่างแอดมินแล้วปิดทันที ไม่ต้องกดกากบาท
   // ต้องกดลงและปล่อยที่พื้นหลังทั้งคู่ จึงไม่ปิดเองตอนลากเมาส์เลือกข้อความแล้วปล่อยนอกกล่อง
-  for (const id of ["login", "panel", "specsEdit", "logs"]) {
+  for (const id of ["login", "panel", "specsEdit", "logs", "images"]) {
     const m = $(id); let down = false;
     m.addEventListener("pointerdown", (e) => { down = e.target === m; });
     m.addEventListener("click", (e) => { if (down && e.target === m) hide(id); down = false; });
   }
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closePopup(); hide("verify"); hide("login"); hide("logs"); hide("specsEdit"); hide("panel"); }
+    if (e.key === "Escape") { closePopup(); hide("verify"); hide("login"); hide("logs"); hide("images"); hide("specsEdit"); hide("panel"); }
   });
 
   // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
@@ -617,8 +786,10 @@
   // แท็บอื่นในเบราว์เซอร์เดียวกันอัปเดตทันที
   if (bc) bc.onmessage = (e) => { if (e.data && e.data.cfg) { cfg = e.data.cfg; render(); } };
 
+  addEventListener("hashchange", handleAdminHash);
   loadConfig();
   initFx();
+  handleAdminHash();
   // อุ่นเครื่องฟังก์ชันดาวน์โหลดล่วงหน้า ลดอาการหน่วงตอนกดครั้งแรก (ตอบ 405 ทันที ไม่แตะข้อมูลใด ๆ)
   (window.requestIdleCallback || setTimeout)(() => {
     fetch("/api/download", { method: "GET", cache: "no-store" }).catch(() => {});

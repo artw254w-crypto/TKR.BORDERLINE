@@ -12,6 +12,7 @@ export const DEFAULTS = {
   status: "ONLINE",
   maintenanceMsg: "ขณะนี้ระบบปิดปรับปรุงชั่วคราวเพื่ออัปเดตเซิร์ฟเวอร์ กรุณากลับมาใหม่อีกครั้งในภายหลัง",
   cooldownSec: 5,
+  img: { cover: "", bg: "" }, // รหัสเวอร์ชันของรูปที่อัปโหลด ("" = ใช้ค่าเริ่มต้น) จัดการผ่านปุ่ม "รูปภาพ" ในแผงแอดมิน
   specs: {
     min: {
       os: "Windows 10 64-bit",
@@ -95,10 +96,35 @@ function getCookie(req, name) {
   return null;
 }
 
-export function isAdmin(req) {
-  const p = verify(getCookie(req, "trk_session"));
-  return !!p && p.role === "admin" && p.exp > Date.now();
+// ---- เซสชันแอดมิน ----
+// ปกติอยู่ได้ 2 ชั่วโมง ถ้าติ๊ก "จดจำเครื่องนี้" จะอยู่ได้ 30 วัน (ต่ออายุให้เองเมื่อเปิดเว็บ ดู /api/session)
+export const SESSION_TTL_MS = 2 * 3600 * 1000;
+export const REMEMBER_TTL_MS = 30 * 24 * 3600 * 1000;
+
+// ลายนิ้วมือของรหัสผ่านแอดมินปัจจุบัน ฝังอยู่ในเซสชัน : เปลี่ยน ADMIN_PASSWORD เมื่อไร
+// เซสชันเดิมทุกอัน (รวมเครื่องที่จดจำไว้) จะใช้ไม่ได้ทันที เป็นวิธียกเลิกการจดจำเครื่องทั้งหมดในครั้งเดียว
+function pwTag() {
+  return crypto.createHmac("sha256", secret()).update("admin-pw:" + (process.env.ADMIN_PASSWORD || "")).digest("base64url").slice(0, 22);
 }
+
+export function issueSession(remember) {
+  const ttl = remember ? REMEMBER_TTL_MS : SESSION_TTL_MS;
+  const token = sign({ role: "admin", exp: Date.now() + ttl, pv: pwTag(), rem: remember ? 1 : 0 });
+  return { token, cookie: `trk_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=${ttl / 1000}` };
+}
+
+export const CLEAR_SESSION_COOKIE = "trk_session=; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=0";
+
+// คืนข้อมูลเซสชันถ้าเป็นแอดมินที่ยังใช้ได้ ไม่งั้น null
+export function adminSession(req) {
+  if (!process.env.ADMIN_PASSWORD) return null;
+  const p = verify(getCookie(req, "trk_session"));
+  if (!p || p.role !== "admin" || !(p.exp > Date.now())) return null;
+  if (typeof p.pv !== "string" || !safeEqual(p.pv, pwTag())) return null;
+  return p;
+}
+
+export const isAdmin = (req) => !!adminSession(req);
 
 export const clientIp = (req, ctx) =>
   ctx?.ip || req.headers.get("x-nf-client-connection-ip") || "unknown";
@@ -126,6 +152,7 @@ export async function getConfig() {
   let saved = null;
   try { saved = await store().get("config", { type: "json" }); } catch {}
   const cfg = { ...DEFAULTS, ...(saved || {}) };
+  cfg.img = { ...DEFAULTS.img, ...(saved?.img || {}) };
   cfg.specs = {
     min: { ...DEFAULTS.specs.min, ...(saved?.specs?.min || {}) },
     rec: { ...DEFAULTS.specs.rec, ...(saved?.specs?.rec || {}) },
@@ -184,7 +211,33 @@ export const publicConfig = (c) => ({
   title: c.title, subtitle: c.subtitle, fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
   specs: c.specs,
+  img: { cover: c.img?.cover || "", bg: c.img?.bg || "" },
 });
+
+// ---------- รูปภาพหน้าปก / พื้นหลัง (อัปโหลดจากแผงแอดมิน) ----------
+// เก็บใน Blobs ที่คีย์ img/<slot>/<แฮชของรูป> (content-addressed) : URL เปลี่ยนทุกครั้งที่เปลี่ยนรูป
+// จึงตั้งแคชเบราว์เซอร์/CDN ได้นานโดยไม่มีวันเห็นรูปเก่าค้าง
+export const IMG_SLOTS = ["cover", "bg"];
+export const IMG_MAX_BYTES = 4 * 1024 * 1024; // เพดานของฟังก์ชัน Netlify อยู่ที่ราว 6 MB เหลือส่วนต่างไว้
+export const imgVersion = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+
+// ตรวจชนิดไฟล์จากไบต์ต้นไฟล์จริง ไม่เชื่อนามสกุลหรือ content-type ที่ส่งมา รับเฉพาะ JPEG/PNG/WebP
+// (ไม่รับ SVG/HTML เพราะฝังสคริปต์ได้) คืน mime หรือ null
+export function sniffImage(b) {
+  if (!b || b.length < 12) return null;
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) return "image/png";
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return "image/webp";
+  return null;
+}
+export async function putImage(slot, v, bytes) {
+  await store().set(`img/${slot}/${v}`, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+}
+export async function getImage(slot, v) {
+  const ab = await store().get(`img/${slot}/${v}`, { type: "arrayBuffer" });
+  return ab ? new Uint8Array(ab) : null;
+}
+export const deleteImage = (slot, v) => store().delete(`img/${slot}/${v}`);
 
 // ---------- ประวัติการดาวน์โหลด (ดูได้เฉพาะแอดมิน) ----------
 // คีย์ = log/<เวลา 13 หลัก>-<รหัส token> จึงเรียงตามเวลาได้ และ token เดิมไม่ถูกนับซ้ำ

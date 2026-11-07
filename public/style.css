@@ -27,9 +27,10 @@ main.grid{display:grid;grid-template-columns:5fr 7fr;gap:24px;align-items:start;
 .card{position:relative;overflow:hidden;background:rgba(18,23,16,.92);border:1px solid var(--bd);border-radius:16px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
 .topline{position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--olive),var(--amber),var(--red))}
 .topline.alt{background:linear-gradient(90deg,var(--amber),var(--olive))}
-.cover{position:relative;height:176px;border-radius:12px;border:1px solid var(--bd);display:grid;place-items:center;margin-bottom:20px;background:linear-gradient(135deg,rgba(101,163,13,.2),rgba(250,204,21,.1))}
+.cover{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:12px;border:1px solid var(--bd);display:grid;place-items:center;margin-bottom:20px;background:linear-gradient(135deg,rgba(101,163,13,.2),rgba(250,204,21,.1))}
 .hero{font-size:64px;filter:grayscale(.4)}
-.build{position:absolute;left:12px;bottom:12px;padding:4px 12px;border-radius:8px;background:rgba(10,13,8,.9);border:1px solid var(--bd);color:var(--amber);font-size:12px;font-weight:700}
+.cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.build{z-index:1;position:absolute;left:12px;bottom:12px;padding:4px 12px;border-radius:8px;background:rgba(10,13,8,.9);border:1px solid var(--bd);color:var(--amber);font-size:12px;font-weight:700}
 h1{font-size:24px;font-weight:900;margin-bottom:6px;text-shadow:0 0 10px rgba(101,163,13,.6)}
 .desc{font-size:12px;line-height:1.7;color:#cbd5e1;margin-bottom:18px}
 .row{display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:8px;border-radius:8px;background:rgba(10,13,8,.8);border:1px solid var(--bd);font-size:12px;color:var(--mute)}
@@ -94,9 +95,9 @@ legend{padding:0 6px;font-size:12px;font-weight:700;color:#cbd5e1}
 @keyframes r{from{transform:translate(-50%,-50%) scale(.2);opacity:1}to{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* รูปพื้นหลังเต็มจอ (วางไฟล์ bg.jpg ไว้ในโฟลเดอร์ public) */
+/* รูปพื้นหลังเต็มจอ: อัปโหลดได้จากแผงแอดมิน (ปุ่ม "รูปภาพ") แอปตั้งค่า --bg-img ให้ ถ้าไม่มีรูปจะเป็นพื้นหลังสีเข้มปกติ */
 body::before{content:"";position:fixed;inset:0;z-index:-1;
-  background:linear-gradient(rgba(8,10,6,.55),rgba(8,10,6,.8)),url("/bg.jpg") center/cover no-repeat}
+  background:linear-gradient(rgba(8,10,6,.55),rgba(8,10,6,.8)),var(--bg-img,none) center/cover no-repeat}
 .story{margin:0 0 18px;padding:10px 12px;border-left:3px solid var(--olive);background:rgba(10,13,8,.6);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:#e2e8f0}
 
 .box.xwide{max-width:860px}.box.logbox{max-width:1180px}
@@ -133,3 +134,18 @@ input[type=file]{display:block;width:100%;margin-top:8px;padding:10px;border:1px
 .srow.note span{display:block;white-space:pre-line;color:var(--mute);margin-top:2px}
 .spec-admin{margin-bottom:0}
 .spec-admin textarea{width:100%;min-height:90px;resize:vertical}
+
+/* ช่องติ๊ก "จดจำเครื่องนี้" ในหน้าล็อกอินแอดมิน */
+label.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;color:#e2e8f0;font-size:12px;cursor:pointer}
+label.chk input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--olive)}
+label.chk small{display:block;margin-top:2px;color:var(--mute);font-size:10px}
+
+/* หน้าต่างอัปโหลดรูป (แอดมิน) */
+.imgslots{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.imgslots{grid-template-columns:1fr}}
+.imgslot{padding:14px;border:1px solid var(--bd);border-radius:12px;background:rgba(10,13,8,.8);min-width:0}
+.imgslot h4{font-size:13px;margin-bottom:2px}
+.imgslot .hint{margin:0 0 10px;text-align:left}
+.imgprev{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:10px;border:1px solid var(--bd);background:#020617;display:grid;place-items:center;margin-bottom:10px;color:var(--mute);font-size:11px;text-align:center;padding:8px}
+.imgprev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgslot .btns{flex-wrap:wrap;gap:8px}.imgslot .btn{flex:1 1 130px;padding:10px;font-size:12px}

@@ -1,4 +1,4 @@
-import { json, sign, safeEqual, sameOrigin, clientIp, rateLimit, readJson } from "../lib/shared.mjs";
+import { json, issueSession, safeEqual, sameOrigin, clientIp, rateLimit, readJson } from "../lib/shared.mjs";
 
 export default async (req, ctx) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
@@ -17,9 +17,8 @@ export default async (req, ctx) => {
   if (typeof body.password !== "string" || body.password.length > 200 || !safeEqual(body.password, adminPass))
     return json({ error: "invalid" }, 401);
 
-  const token = sign({ role: "admin", exp: Date.now() + 2 * 3600 * 1000 });
-  return json({ ok: true }, 200, {
-    "set-cookie": `trk_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=7200`,
-  });
+  // remember=true : จดจำเครื่องนี้ 30 วัน (ไม่ต้องใส่รหัสอีก) ไม่งั้นอยู่ได้ 2 ชั่วโมง
+  const { cookie } = issueSession(body.remember === true);
+  return json({ ok: true }, 200, { "set-cookie": cookie });
 };
 export const config = { path: "/api/login" };
