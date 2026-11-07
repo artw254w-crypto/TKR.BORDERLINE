@@ -102,7 +102,7 @@
     $("noticeIcon").textContent = on ? "✔" : "⚠";
     $("noticeTitle").textContent = on ? "ไฟล์พร้อมสำหรับการดาวน์โหลด" : "ระบบไม่พร้อมดาวน์โหลดชั่วคราว";
     $("noticeDesc").textContent = on
-      ? "ลิงก์ตรงผ่าน Google Drive ความเร็วสูง กรุณาเตรียมพื้นที่ไดรฟ์อย่างน้อย 20 GB"
+      ? "ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB"
       : cfg.maintenanceMsg || "อยู่ระหว่างการปรับปรุงระบบ";
     $("dlBtn").disabled = !on;
     $("dlText").textContent = on ? "🚀 พร้อมดาวน์โหลด (คลิกที่นี่)" : "🔒 ระบบปิดปรับปรุงชั่วคราว";
@@ -204,9 +204,15 @@
   const loadToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } };
   let vRun = 0, vSkipMd5 = false;
 
-  function vResult(level, title, detail) {
+  // ข้อความที่ผู้ใช้เห็นจะไม่มีคำว่า Google Drive (รายละเอียดเต็มดูได้ในแผงแอดมิน → ประวัติดาวน์โหลด)
+  const pub = (s) => String(s || "")
+    .replace(/\(Drive ไม่ให้ MD5[^)]*\)/g, "(ตรวจเนื้อไฟล์ละเอียดไม่ได้ ถ้าแตกไฟล์แล้วขึ้น error ให้โหลดใหม่)")
+    .replace(/\s*บน Google Drive/g, "").replace(/\s*บน Drive/g, "")
+    .replace(/Google Drive/g, "ต้นฉบับ").replace(/Drive/g, "ต้นฉบับ");
+  function vResult(level, title, detail, status) {
     const box = $("vRes"); box.className = "vres " + level;
-    $("vTitle").textContent = title; $("vDetail").textContent = detail || ""; box.hidden = false;
+    if (status === "drive_unavailable" || status === "unverifiable") { title = "ตรวจไฟล์ไม่ได้ในตอนนี้"; detail = "ลองตรวจอีกครั้งภายหลัง"; }
+    $("vTitle").textContent = pub(title); $("vDetail").textContent = pub(detail); box.hidden = false;
   }
   function vNote(text) { const m = $("vMsg"); m.textContent = text || ""; m.hidden = !text; }
   function vBusy(on) {
@@ -250,7 +256,7 @@
       return;
     }
     const run = ++vRun; vSkipMd5 = false;
-    vBusy(true); $("vProg").style.width = "0%"; vNote("กำลังเทียบขนาดไฟล์กับ Google Drive...");
+    vBusy(true); $("vProg").style.width = "0%"; vNote("กำลังเทียบขนาดไฟล์กับต้นฉบับ...");
     const post = (extra) => api("/api/download", "POST", { action: "verify", token, size: f.size, name: f.name, ...extra });
 
     let r = await post({});
@@ -267,12 +273,12 @@
         return;
       }
       if (!vAlive(run)) return;
-      vNote("กำลังเทียบผลกับ Google Drive...");
+      vNote("กำลังเทียบผลกับต้นฉบับ...");
       r = await post(md5 ? { md5 } : { skipMd5: true });
       if (!vAlive(run)) return;
     }
     vBusy(false); vNote("");
-    if (r.ok) vResult(r.data.level === "ok" ? "ok" : r.data.level === "error" ? "error" : "warn", r.data.title, r.data.detail);
+    if (r.ok) vResult(r.data.level === "ok" ? "ok" : r.data.level === "error" ? "error" : "warn", r.data.title, r.data.detail, r.data.status);
     else vResult("error", "ตรวจไฟล์ไม่สำเร็จ", verifyErr(r));
   }
 
@@ -303,16 +309,15 @@
   const fmtDate = (t) => (t ? new Date(t).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium" }) : "");
 
   function renderScan() {
+    // หน้าหลักแสดงเฉพาะสถานะสั้น ๆ รายละเอียด (เครื่องมือ วันที่ MD5 ฯลฯ) ดูได้ในแผงแอดมิน หัวข้อ 4
     const el = $("scanStat"), sub = $("scanSub"), s = scan;
     let cls = "scan-none", t = "🛡 กำลังตรวจสอบสถานะ...", u = "";
     if (s) {
-      const who = [s.tool, fmtDate(s.at)].filter(Boolean).join(" · ");
-      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 สแกนไวรัสแล้ว: ไม่พบภัย"; u = who + " · MD5 ตรงกับไฟล์บน Google Drive"; }
-      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 มีผลสแกน (ยังเทียบกับไฟล์บน Drive ไม่ได้)"; u = who; }
-      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ ไฟล์ถูกเปลี่ยนหลังสแกนล่าสุด"; u = "ยังไม่ได้สแกนไฟล์เวอร์ชันนี้"; }
+      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 สแกนไวรัสแล้ว: ไม่พบภัย"; }
+      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 มีผลสแกน (รอยืนยันไฟล์)"; }
+      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ ไฟล์ถูกเปลี่ยนหลังสแกนล่าสุด"; }
       else if (s.state === "infected") { cls = "scan-bad"; t = "⛔ พบมัลแวร์ในไฟล์ที่สแกน"; u = "กรุณาอย่าดาวน์โหลดจนกว่าผู้ดูแลจะแก้ไข"; }
-      else { t = "🛡 ยังไม่ได้สแกนไวรัส"; u = "ผู้ดูแลยังไม่ได้รายงานผลสแกน"; }
-      if (s.md5 && (s.state === "clean" || s.state === "unconfirmed")) u += "\nMD5: " + s.md5;
+      else { t = "🛡 ยังไม่ได้สแกนไวรัส"; }
     }
     el.className = cls; el.textContent = t; sub.textContent = u;
   }

@@ -388,7 +388,4 @@ export async function scanStatus(cfg, { fresh = false } = {}) {
 }
 export const clearScanCache = () => { scanCache = null; };
 // ส่วนที่เปิดเผยต่อสาธารณะ (ไม่ส่งรายละเอียดภายใน)
-export const publicScan = (v) => ({
-  state: v.state, tool: v.tool || "", at: v.at || 0, sigDate: v.sigDate || "",
-  md5: v.state === "clean" || v.state === "unconfirmed" ? v.md5 || "" : "",
-});
+export const publicScan = (v) => ({ state: v.state });

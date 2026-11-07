@@ -43,14 +43,14 @@
     <div class="topline alt"></div>
     <div id="notice" class="notice">
       <span id="noticeIcon" class="n-icon">✔</span>
-      <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ลิงก์ตรงผ่าน Google Drive ความเร็วสูง กรุณาเตรียมพื้นที่ไดรฟ์อย่างน้อย 20 GB</div></div>
+      <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div></div>
     </div>
     <div class="two">
       <div class="stat"><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus">🟢 พร้อมใช้งาน (Ready)</b></div>
       <div class="stat"><small>การตรวจสอบความปลอดภัย</small><b id="scanStat" class="scan-none">🛡 กำลังตรวจสอบสถานะ...</b><span id="scanSub" class="scan-sub"></span></div>
     </div>
     <button id="dlBtn" class="dl orb" type="button"><span id="dlText">🚀 พร้อมดาวน์โหลด (คลิกที่นี่)</span></button>
-    <button id="verifyBtn" class="vbtn" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม (เทียบกับ Google Drive)</button>
+    <button id="verifyBtn" class="vbtn" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม</button>
     <div class="guide">
       <h4>ℹ คำแนะนำในการติดตั้ง</h4>
       <ul>
@@ -103,7 +103,7 @@
   <div class="box">
     <button class="x" data-close="verify" type="button" aria-label="ปิด">✕</button>
     <div class="center"><div class="shield">🔍</div><h3 id="verifyTitle" class="orb">ตรวจไฟล์ที่ดาวน์โหลด</h3>
-    <p class="desc">เลือกไฟล์ที่โหลดเสร็จแล้วในเครื่องคุณ ระบบจะเทียบขนาดและ MD5 กับต้นฉบับบน Google Drive ว่าครบหรือเสียหายไหม (คำนวณในเครื่องคุณ ไฟล์ไม่ถูกอัปโหลด)</p></div>
+    <p class="desc">เลือกไฟล์ที่โหลดเสร็จแล้วในเครื่องคุณ ระบบจะเทียบขนาดและ MD5 กับไฟล์ต้นฉบับว่าครบหรือเสียหายไหม (คำนวณในเครื่องคุณ ไฟล์ไม่ถูกอัปโหลด)</p></div>
     <input id="vFile" type="file" aria-label="เลือกไฟล์ที่ดาวน์โหลดมา">
     <div id="vProgWrap" class="progress" hidden><div id="vProg"></div></div>
     <p id="vMsg" class="hint" hidden></p>
