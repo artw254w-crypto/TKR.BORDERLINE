@@ -130,41 +130,48 @@
   </div>
 </div>
 
-<!-- Admin panel -->
+<!-- Admin panel (จัดหน้าใหม่ให้กดง่าย: ปุ่มเครื่องมือใหญ่ด้านบน, หัวข้อเป็นการ์ด, แถบบันทึกติดล่างตลอด; id/ชื่อฟิลด์เหมือนเดิมทุกอย่าง) -->
 <div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
   <div class="box wide">
     <div class="phead"><h3 id="panelTitle" class="orb">ADMIN PANEL</h3>
-      <div><button id="specBtn" class="link" type="button">🖥 สเปคเครื่อง</button> <button id="imgBtn" class="link" type="button">🖼 รูปภาพ</button> <button id="logBtn" class="link" type="button">📋 ประวัติดาวน์โหลด</button> <button id="logoutBtn" class="link" type="button">ออกจากระบบ</button>
-      <button class="x static" data-close="panel" type="button" aria-label="ปิด">✕</button></div></div>
+      <button class="x static" data-close="panel" type="button" aria-label="ปิด">✕</button></div>
+    <div class="tools" role="group" aria-label="เมนูลัด">
+      <button id="specBtn" class="tool" type="button"><span class="ic">🖥</span>สเปคเครื่อง</button>
+      <button id="imgBtn" class="tool" type="button"><span class="ic">🖼</span>รูปภาพ</button>
+      <button id="logBtn" class="tool" type="button"><span class="ic">📋</span>ประวัติดาวน์โหลด</button>
+      <button id="logoutBtn" class="tool danger" type="button"><span class="ic">🚪</span>ออกจากระบบ</button>
+    </div>
     <form id="adminForm" autocomplete="off">
-      <fieldset><legend>1. สถานะการดาวน์โหลด</legend>
+      <section class="sec"><h4 class="sec-t"><span class="no">1</span>สถานะการดาวน์โหลด</h4>
         <div class="two">
           <label class="opt on"><input type="radio" name="status" value="ONLINE"><span>🟢 พร้อมใช้งาน<small>เปิดดาวน์โหลดตามปกติ</small></span></label>
           <label class="opt off"><input type="radio" name="status" value="OFFLINE"><span>🔴 ปิดปรับปรุง<small>ปิดปุ่มดาวน์โหลดทันที</small></span></label>
         </div>
         <label>ข้อความเมื่อปิดปรับปรุง<input id="fMsg" type="text" maxlength="200"></label>
-      </fieldset>
-      <fieldset><legend>2. เวลาคูลดาวน์ (วินาที)</legend>
+      </section>
+      <section class="sec"><h4 class="sec-t"><span class="no">2</span>เวลาคูลดาวน์ (วินาที)</h4>
         <input id="fCool" type="number" min="1" max="30" required>
-      </fieldset>
-      <fieldset><legend>3. ข้อมูลเกมและลิงก์ดาวน์โหลด</legend>
+      </section>
+      <section class="sec"><h4 class="sec-t"><span class="no">3</span>ข้อมูลเกมและลิงก์ดาวน์โหลด</h4>
         <label>URL ลิงก์ดาวน์โหลด (https เท่านั้น)<input id="fUrl" type="url" required maxlength="2000"></label>
         <div class="two">
           <label>ชื่อเกม<input id="fTitle" type="text" required maxlength="60"></label>
           <label>ขนาดไฟล์<input id="fSize" type="text" required maxlength="20"></label>
         </div>
         <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
-      </fieldset>
-      <fieldset><legend>4. ผลสแกนไวรัสของไฟล์เกม</legend>
+      </section>
+      <section class="sec"><h4 class="sec-t"><span class="no">4</span>ผลสแกนไวรัสของไฟล์เกม</h4>
         <div id="scanAd" class="vres"><b id="scanAdTitle">กำลังโหลด...</b><span id="scanAdDetail"></span></div>
         <p class="hint left">ผลนี้มาจากการสแกนจริงด้วย Microsoft Defender หรือ ClamAV บนเครื่องของคุณ แล้วส่งเข้ามาด้วยสคริปต์ในโฟลเดอร์ tools (ดูวิธีใน README) หน้าเว็บจะขึ้นเขียว "สแกนแล้ว" ก็ต่อเมื่อ MD5 ของไฟล์ที่สแกนตรงกับไฟล์บน Drive เท่านั้น</p>
         <button id="scanDel" class="vbtn" type="button">🗑 ลบผลสแกน (หน้าเว็บจะกลับเป็น "ยังไม่ได้สแกน")</button>
-      </fieldset>
-      <div id="saveErr" class="err" hidden></div>
-      <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>
-      <div class="btns end"><button class="btn ghost" data-close="panel" type="button">ปิด</button><button class="btn" type="submit">💾 บันทึก</button></div>
+      </section>
+      <p class="hint">เปลี่ยนรหัสผ่านแอดมินได้ที่ Netlify → Site settings → Environment variables (ADMIN_PASSWORD)</p>
+      <div class="savebar">
+        <div id="saveErr" class="err" hidden></div>
+        <div id="saveOk" class="okmsg" hidden>บันทึกเรียบร้อย</div>
+        <div class="btns"><button class="btn ghost" data-close="panel" type="button">ปิด</button><button class="btn primary" type="submit">💾 บันทึก</button></div>
+      </div>
     </form>
-    <p class="hint">เปลี่ยนรหัสผ่านแอดมินได้ที่ Netlify → Site settings → Environment variables (ADMIN_PASSWORD)</p>
   </div>
 </div>
 

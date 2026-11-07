@@ -215,3 +215,30 @@ html.dt-open::after{content:"ปิดเครื่องมือนักพ
 .stat b.scan-ok{color:#34d399}.stat b.scan-warn{color:var(--amber)}.stat b.scan-bad{color:#fb7185}.stat b.scan-none{color:var(--mute)}
 .scan-sub{display:block;margin-top:4px;font-size:10px;line-height:1.55;color:var(--mute);white-space:pre-line;overflow-wrap:anywhere}
 .hint.left{text-align:left}
+
+/* ===== แผงแอดมิน: จัดหน้าใหม่ให้กดง่าย (เปลี่ยนเฉพาะหน้าตา ระบบทำงานเหมือนเดิมทุกอย่าง) ===== */
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:78px;padding:10px 6px;border-radius:14px;border:1px solid var(--bd);background:rgba(10,13,8,.8);color:#e2e8f0;font-size:13px;font-weight:600;text-align:center;line-height:1.3}
+.tool .ic{font-size:26px;line-height:1}
+.tool:hover{border-color:var(--olive);color:var(--amber)}
+.tool.danger:hover{border-color:#f43f5e;color:#fb7185}
+@media(max-width:480px){.tools{grid-template-columns:repeat(2,1fr)}}
+.sec{margin-bottom:14px;padding:16px;border-radius:14px;border:1px solid var(--bd);background:rgba(10,13,8,.8)}
+.sec-t{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:15px;color:#e2e8f0}
+.sec-t .no{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--olive);color:#0a0d08;font-size:13px;font-weight:800}
+.sec label{font-size:13px;color:#cbd5e1}
+.sec .two{margin-bottom:0}
+.sec .opt{flex-direction:row;align-items:center;gap:12px;margin:0;padding:16px;font-size:14px;min-height:84px}
+.sec .opt small{font-size:12px}
+.sec input[type=text],.sec input[type=url],.sec input[type=number]{padding:13px 14px;font-size:15px}
+.sec #fCool{max-width:160px}
+.sec .vbtn{padding:14px;font-size:14px}
+.savebar{position:sticky;bottom:0;z-index:4;margin:16px -24px -24px;padding:12px 24px calc(14px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--bd);border-radius:0 0 16px 16px;box-shadow:0 -10px 20px rgba(0,0,0,.35)}
+.savebar .err,.savebar .okmsg{margin:0 0 10px}
+.savebar .btns{margin:0}
+.savebar .btn{min-height:52px;font-size:15px}
+.savebar .btn.primary{flex:2}
+@media(max-width:640px){
+  .savebar{margin:16px -14px 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));border-radius:0}
+  .sec{padding:14px}
+}
