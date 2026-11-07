@@ -5,7 +5,7 @@
   { const l = document.createElement("link"); l.rel = "stylesheet";
     l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
     document.head.appendChild(l); }
-  let cfg = null, timer = null, popupRun = 0, saving = false;
+  let cfg = null, timer = null, popupRun = 0, saving = false, adminUi = false;
   const bc = "BroadcastChannel" in window ? new BroadcastChannel("trk-cfg") : null;
 
   async function api(path, method = "GET", body) {
@@ -87,6 +87,7 @@
   // ใช้ textContent ทั้งหมด ไม่มี innerHTML กับข้อมูลที่มาจากผู้ใช้/เซิร์ฟเวอร์ (กัน XSS)
   function render() {
     if (!cfg) return;
+    applyGear();
     const on = cfg.status === "ONLINE";
     $("title").textContent = cfg.title;
     document.title = cfg.title;
@@ -308,7 +309,13 @@
   const HINT_KEY = "trk_admin";
   const setHint = (on) => { try { on ? localStorage.setItem(HINT_KEY, "1") : localStorage.removeItem(HINT_KEY); } catch {} };
   const hasHint = () => { try { return localStorage.getItem(HINT_KEY) === "1"; } catch { return false; } };
-  function showAdminUi(on) { $("gearBtn").hidden = !on; $("footAdmin").hidden = !on; }
+  // เฟืองโชว์เมื่อ (ก) ยังไม่เคยมีแอดมินล็อกอินเลย (cfg.gear) ทุกคนเห็น หรือ (ข) เครื่องนี้เป็นแอดมินอยู่
+  // พอมีแอดมินล็อกอินแล้ว cfg.gear เป็น false → ผู้ใช้ทั่วไปเฟืองหายภายใน ~4 วินาที เหลือเฉพาะแอดมิน
+  function applyGear() {
+    const on = adminUi || !!(cfg && cfg.gear);
+    $("gearBtn").hidden = !on; $("footAdmin").hidden = !on;
+  }
+  function showAdminUi(on) { adminUi = on; applyGear(); }
   function adminGained() { adminHint = true; setHint(true); showAdminUi(true); }
   function adminLost() { adminHint = false; adminCfg = null; setHint(false); showAdminUi(false); }
 

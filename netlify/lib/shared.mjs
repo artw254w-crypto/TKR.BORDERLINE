@@ -12,6 +12,7 @@ export const DEFAULTS = {
   status: "ONLINE",
   maintenanceMsg: "ขณะนี้ระบบปิดปรับปรุงชั่วคราวเพื่ออัปเดตเซิร์ฟเวอร์ กรุณากลับมาใหม่อีกครั้งในภายหลัง",
   cooldownSec: 5,
+  adminClaimed: false, // true = เคยมีแอดมินล็อกอินแล้ว → ซ่อนปุ่มเฟืองจากผู้ใช้ทั่วไป (ไม่แสดงในแผงแอดมิน/ไม่ถูกแก้โดยฟอร์ม)
   img: { cover: "", bg: "" }, // รหัสเวอร์ชันของรูปที่อัปโหลด ("" = ใช้ค่าเริ่มต้น) จัดการผ่านปุ่ม "รูปภาพ" ในแผงแอดมิน
   specs: {
     min: {
@@ -161,6 +162,12 @@ export async function getConfig() {
 }
 export async function saveConfig(cfg) { await store().setJSON("config", cfg); }
 
+// แอดมินล็อกอินสำเร็จครั้งแรก → จำไว้ว่า "มีเจ้าของแล้ว" ปุ่มเฟืองของผู้ใช้ทั่วไปจะหายไปทั้งเว็บ (เหลือเฉพาะคนที่เป็นแอดมินอยู่)
+export async function claimAdmin() {
+  const c = await getConfig();
+  if (!c.adminClaimed) await saveConfig({ ...c, adminClaimed: true });
+}
+
 const clean = (v, max) =>
   String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
 
@@ -211,6 +218,7 @@ export const publicConfig = (c) => ({
   title: c.title, subtitle: c.subtitle, fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
   specs: c.specs,
+  gear: !c.adminClaimed, // ยังไม่มีแอดมินล็อกอิน = ทุกคนเห็นเฟือง
   img: { cover: c.img?.cover || "", bg: c.img?.bg || "" },
 });
 

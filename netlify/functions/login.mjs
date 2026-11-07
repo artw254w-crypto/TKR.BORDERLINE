@@ -1,4 +1,4 @@
-import { json, issueSession, safeEqual, sameOrigin, clientIp, rateLimit, readJson } from "../lib/shared.mjs";
+import { json, issueSession, safeEqual, sameOrigin, clientIp, rateLimit, readJson, claimAdmin } from "../lib/shared.mjs";
 
 export default async (req, ctx) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
@@ -18,6 +18,7 @@ export default async (req, ctx) => {
     return json({ error: "invalid" }, 401);
 
   // remember=true : จดจำเครื่องนี้ 30 วัน (ไม่ต้องใส่รหัสอีก) ไม่งั้นอยู่ได้ 2 ชั่วโมง
+  try { await claimAdmin(); } catch {} // ล็อกอินสำเร็จ → ซ่อนเฟืองจากผู้ใช้ทั่วไป
   const { cookie } = issueSession(body.remember === true);
   return json({ ok: true }, 200, { "set-cookie": cookie });
 };
