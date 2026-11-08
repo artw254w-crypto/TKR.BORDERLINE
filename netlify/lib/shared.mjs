@@ -7,6 +7,7 @@ export const DEFAULTS = {
   title: "T.R.K : BORDER LINE",
   subtitle: "เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์",
   story: "ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม",
+  theme: "A", // ธีมหน้าเว็บ A/B/C/D (แอดมินเปลี่ยนได้)
   fileUrl: "https://drive.google.com/",
   fileSize: "15.1 GB",
   fileMd5: "", // MD5 ของไฟล์เกม (ไม่บังคับ) ใช้กับโหมด R2 เมื่อไฟล์ใน R2 ไม่ได้ฝัง MD5 ไว้ (ดูได้จากผลสแกน)
@@ -208,7 +209,8 @@ export function validateConfig(input, current) {
   }
   out.maintenanceMsg = clean(input.maintenanceMsg, 200);
   out.subtitle = clean(input.subtitle, 400) || current.subtitle; // คำอธิบายเกม (ห้ามว่าง)
-  out.story = clean(input.story, 400);                           // เนื้อเรื่อง (เว้นว่าง = ซ่อน)
+  out.story = clean(input.story, 400);
+  out.theme = ["A", "B", "C", "D"].includes(input.theme) ? input.theme : (current.theme || "A");                           // เนื้อเรื่อง (เว้นว่าง = ซ่อน)
   if (!out.title || !out.fileSize || !out.version) return { error: "กรอกชื่อเกม ขนาดไฟล์ และเวอร์ชั่นให้ครบ" };
   if (input.status !== "ONLINE" && input.status !== "OFFLINE") return { error: "สถานะไม่ถูกต้อง" };
   out.status = input.status;
@@ -230,7 +232,7 @@ export function validateConfig(input, current) {
 }
 
 export const publicConfig = (c) => ({
-  title: c.title, subtitle: c.subtitle, story: c.story, fileSize: c.fileSize, version: c.version,
+  title: c.title, subtitle: c.subtitle, story: c.story, theme: c.theme || "A", fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
   specs: c.specs,
   gear: !c.adminClaimed, // ยังไม่มีแอดมินล็อกอิน = ทุกคนเห็นเฟือง

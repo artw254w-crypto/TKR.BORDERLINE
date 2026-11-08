@@ -88,6 +88,7 @@
   function render() {
     if (!cfg) return;
     applyGear();
+    if (window.trkTheme) window.trkTheme(cfg.theme);
     const on = cfg.status === "ONLINE";
     $("title").textContent = cfg.title;
     document.title = cfg.title;
@@ -363,6 +364,7 @@
       ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
       : "โหมดส่งไฟล์: Google Drive — เว็บรู้เองไม่ได้ว่าผู้ใช้โหลดจบหรือไม่ ถ้าต้องการรู้ ให้ตั้งค่า Cloudflare R2 ตามไฟล์ README-R2.txt";
     document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
+    { const tr = document.querySelector(`input[name="theme"][value="${c.theme || "A"}"]`); if (tr) tr.checked = true; }
     hide("saveErr"); hide("saveOk");
   }
 
@@ -434,11 +436,13 @@
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
       subtitle: $("fSub").value, story: $("fStory").value,
       fileMd5: $("fMd5").value,
+      theme: (document.querySelector('input[name="theme"]:checked') || {}).value,
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
     if (r.status === 401) { adminLost(); hide("panel"); return openLogin(); }
     if (!r.ok) { $("saveErr").textContent = r.data.error || "บันทึกไม่สำเร็จ"; show("saveErr"); return; }
     adminCfg = r.data;
+    if (cfg && r.data.theme) cfg.theme = r.data.theme;
     show("saveOk");
     loadConfig();
   }
@@ -860,6 +864,9 @@
   $("logMore").addEventListener("click", () => { logLimit += 100; loadLogs(); });
   $("logClear").addEventListener("click", clearLogsAll);
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
+  // เลือกธีมในแผงแอดมิน = ดูตัวอย่างทันที (ยังไม่บันทึก) ปิดแผงโดยไม่บันทึกจะกลับเป็นธีมที่ใช้จริง
+  document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener("change", () => window.trkTheme(r.value, false)));
+  document.querySelectorAll('[data-close="panel"]').forEach((b) => b.addEventListener("click", () => { if (cfg) window.trkTheme(cfg.theme); }));
   // คลิกที่ว่างนอกกล่อง (พื้นหลังมืด) ของหน้าต่างแอดมินแล้วปิดทันที ไม่ต้องกดกากบาท
   // ต้องกดลงและปล่อยที่พื้นหลังทั้งคู่ จึงไม่ปิดเองตอนลากเมาส์เลือกข้อความแล้วปล่อยนอกกล่อง
   for (const id of ["login", "panel", "specsEdit", "logs", "images"]) {

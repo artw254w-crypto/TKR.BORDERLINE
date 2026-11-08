@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/home.css">
-<link rel="stylesheet" href="/theme-cinema.css"><!-- ธีม A (ค่าเริ่มต้น) ถ้าอยากใช้ธีม B ให้เปลี่ยนชื่อไฟล์เป็น /theme-light.css -->
 <script src="/guard.js"></script>
+<script src="/theme.js"></script>
 </head>
 <body>
 <div id="cursor"></div><div id="cursorDot"></div>
@@ -159,6 +159,15 @@
       <button id="logoutBtn" class="tool danger" type="button"><span class="ic">🚪</span>ออกจากระบบ</button>
     </div>
     <form id="adminForm" autocomplete="off">
+      <section class="sec"><h4 class="sec-t"><span class="no">🎨</span>ธีมหน้าเว็บ</h4>
+        <p class="hint left">เลือกแล้วหน้าเว็บด้านหลังจะเปลี่ยนให้ดูทันที กด "บันทึก" เพื่อใช้จริงกับผู้เข้าชมทุกคน (ถ้าปิดโดยไม่บันทึก จะกลับเป็นธีมเดิม)</p>
+        <div class="themepick" role="radiogroup" aria-label="ธีมหน้าเว็บ">
+          <label class="tp"><input type="radio" name="theme" value="A"><span class="sw swA"></span><b>A ซีเนมา</b><small>ดำ + ส้ม ขอบคม ภาพเต็มจอ</small></label>
+          <label class="tp"><input type="radio" name="theme" value="B"><span class="sw swB"></span><b>B สว่างสะอาด</b><small>พื้นครีม การ์ดขาว อ่านง่าย</small></label>
+          <label class="tp"><input type="radio" name="theme" value="C"><span class="sw swC"></span><b>C เทอร์มินัล</b><small>จอดำ ตัวอักษรเขียวเรืองแสง</small></label>
+          <label class="tp"><input type="radio" name="theme" value="D"><span class="sw swD"></span><b>D ป๊อป</b><small>เหลือง-ชมพู ขอบหนา สีสด</small></label>
+        </div>
+      </section>
       <section class="sec"><h4 class="sec-t"><span class="no">1</span>สถานะการดาวน์โหลด</h4>
         <div class="two">
           <label class="opt on"><input type="radio" name="status" value="ONLINE"><span>🟢 พร้อมใช้งาน<small>เปิดดาวน์โหลดตามปกติ</small></span></label>

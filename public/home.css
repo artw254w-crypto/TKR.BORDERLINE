@@ -85,3 +85,16 @@ h1#title{font:900 clamp(28px,3.5vw,42px)/1.15 "Orbitron","Prompt",sans-serif;let
 @media(max-width:480px){.hp-trust{grid-template-columns:1fr}.hp-dl-tx>span{font-size:18px}.hp-wrap{padding:0 14px}}
 @media(prefers-reduced-motion:reduce){.hp-dl{transition:none}}
 .hp-dl:disabled .hp-dl-tx small{display:none}
+
+/* ตัวเลือกธีมในแผงแอดมิน (สีกำหนดตายตัว เพื่อให้หน้าตาเหมือนกันทุกธีม) */
+.themepick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+@media(max-width:520px){.themepick{grid-template-columns:1fr}}
+.tp{position:relative;display:flex;flex-direction:column;gap:2px;padding:12px 12px 12px 14px;border:2px solid #3a4a2e;border-radius:12px;background:#0f140c;color:#f1f5f9;cursor:pointer;font-size:14px;line-height:1.4}
+.tp input{position:absolute;right:12px;bottom:14px;width:18px;height:18px;accent-color:#84cc16}
+.tp b{font-size:15px}.tp small{color:#94a3b8;font-size:12px}
+.tp:has(input:checked){border-color:#84cc16;background:#16200f;box-shadow:0 0 0 2px rgba(132,204,22,.3)}
+.sw{display:block;height:34px;border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,.15)}
+.swA{background:linear-gradient(90deg,#0a0a0b 0 45%,#ff6a1a 45% 75%,#ffb703 75%)}
+.swB{background:linear-gradient(90deg,#f4f1ea 0 45%,#fff 45% 70%,#3f6212 70%)}
+.swC{background:linear-gradient(90deg,#000 0 50%,#22c55e 50% 75%,#86efac 75%)}
+.swD{background:linear-gradient(90deg,#ffe14d 0 40%,#ff3d81 40% 70%,#111 70%)}

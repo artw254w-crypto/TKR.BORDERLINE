@@ -1,0 +1,54 @@
+/* ธีม D "ป๊อป": เหลืองสด ชมพู ขอบดำหนา เงาแข็ง การ์ดเอียงเล็กน้อย สีสดแบบโปสเตอร์ */
+:root{--bg:#ffe14d;--card:#fff;--bd:#111}
+html,body{background-color:#ffe14d!important}
+body{background-image:radial-gradient(rgba(0,0,0,.1) 1.6px,transparent 1.7px);background-size:20px 20px;color:#111;font-weight:500;overflow-x:hidden}
+body::before,#bg{display:none!important}
+.hp-head{background:#fff;border-bottom:4px solid #111}
+.hp-brand{color:#111}.hp-brand b{color:#ff3d81}
+.hp-logo{border:3px solid #111;border-radius:10px;background:#ffe14d;box-shadow:3px 3px 0 #111}
+.hp-nav a{color:#111;font-weight:700;border-radius:10px}
+.hp-nav a:hover{background:#111;color:#ffe14d}
+.badge{background:#3ddc84;border:3px solid #111;color:#111;border-radius:10px;font-weight:800}
+.badge.off{background:#ff7a7a}
+.hp-head .gear{background:#fff;border:3px solid #111;color:#111;border-radius:10px}
+.hp-hero{padding-top:44px;gap:48px}
+.hp-cover{border:4px solid #111;border-radius:18px;box-shadow:10px 10px 0 #111;transform:rotate(-2deg);background:#fff}
+.hp-build{background:#ff3d81;color:#fff;border:3px solid #111;border-radius:10px;font-weight:800;transform:rotate(3deg);box-shadow:3px 3px 0 #111}
+.hp-copy{background:#fff;border:4px solid #111;border-radius:22px;box-shadow:10px 10px 0 #111;color:#111}
+h1#title{color:#111;text-shadow:4px 4px 0 #ff3d81;font-weight:900}
+.hp-lead{color:#222}
+.hp-story{border-left:6px solid #111;background:#d6f5ff;padding:10px 14px;border-radius:0 14px 14px 0;color:#111}
+.hp-facts li{border:3px solid #111;border-radius:14px;box-shadow:3px 3px 0 #111;background:#a8e6ff}
+.hp-facts li:nth-child(2){background:#ffd1e8}.hp-facts li:nth-child(3){background:#c8f7c5}
+.hp-facts span{color:#333}.hp-facts b{color:#111}
+.hp-dl{background:#ff3d81;color:#fff;border:4px solid #111;border-radius:18px;box-shadow:6px 6px 0 #111;transition:transform .1s,box-shadow .1s}
+.hp-dl:hover:not(:disabled){filter:none;transform:translate(-2px,-2px);box-shadow:8px 8px 0 #111}
+.hp-dl:active:not(:disabled){transform:translate(4px,4px);box-shadow:2px 2px 0 #111}
+.hp-dl-ic{background:#ffe14d;color:#111;border:3px solid #111}
+.hp-dl-tx>span{font-weight:900}
+.hp-dl:disabled{background:#ddd;color:#555;box-shadow:none;border-style:dashed}
+.hp-link{color:#1d4ed8;font-weight:700}
+.hp-copy .notice{background:#c8f7c5;border:3px solid #111;border-radius:14px}
+.hp-copy .n-icon,.hp-copy .n-title{color:#111}.hp-copy .n-desc{color:#222}
+.hp-copy .notice.off{background:#ffd1d1}.hp-copy .notice.off .n-icon,.hp-copy .notice.off .n-title{color:#b00020}
+.hp-trust>div{background:#fff;border:3px solid #111;border-radius:14px}
+.hp-trust small{color:#555}.hp-trust b{color:#111}
+.hp-trust b.scan-ok{color:#0a7a3d}.hp-trust b.scan-warn{color:#b45309}.hp-trust b.scan-bad{color:#b00020}
+.hp-sec h2{color:#111;font-weight:900}
+.hp-sec h2::before{background:#ff3d81;border:3px solid #111;width:18px;height:30px;border-radius:6px}
+.hp-steps li,.hp-spec{border:4px solid #111;border-radius:20px;box-shadow:6px 6px 0 #111;color:#111;background:#fff}
+.hp-steps li:nth-child(1){background:#a8e6ff}.hp-steps li:nth-child(2){background:#ffd1e8}.hp-steps li:nth-child(3){background:#c8f7c5}
+.hp-steps .n{background:#111;color:#ffe14d}
+.hp-steps h3{color:#111;font-weight:900}.hp-steps p{color:#222}
+.hp-steps code{background:#fff;color:#111;border:2px solid #111}
+.hp-spec.rec{background:#fff7b8;border-color:#111}
+.hp-spec .specs-t{color:#111;font-weight:900}
+.hp-spec .srow{border-top:2px dashed #111;color:#111}.hp-spec .srow b{color:#444}
+.hp-foot{background:#111;color:#ffe14d;border-top:4px solid #111}
+.modal{--bg:#0a0d08;--card:#14161a;--bd:#2a2d33;color:#f1f5f9}
+.box{background:#14161a;border:4px solid #ffe14d;border-radius:20px;box-shadow:8px 8px 0 #000}
+.btn{background:#ff3d81;color:#fff;border:3px solid #000;border-radius:12px;box-shadow:3px 3px 0 #000}
+.btn.ghost{background:#2a2d33;color:#fff}
+#prog{background:#ffe14d}
+@media(max-width:900px){.hp-hero{gap:28px}.hp-cover{transform:rotate(-1deg);box-shadow:6px 6px 0 #111}.hp-copy{box-shadow:6px 6px 0 #111}}
+@media(prefers-reduced-motion:reduce){.hp-dl{transition:none}}

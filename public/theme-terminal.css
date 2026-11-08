@@ -1,0 +1,58 @@
+/* ธีม C "เทอร์มินัล": จอดำ ตัวอักษรเขียวเรืองแสง ฟอนต์โมโน ขอบเส้นประ ภาพถูกย้อมเป็นโทนเขียว */
+:root{--bg:#000;--card:#030a04;--bd:#14532d;--olive:#22c55e;--amber:#86efac;--ok:#22c55e}
+html,body{background:#000!important}
+body{color:#b7f5c8;font-family:ui-monospace,"DejaVu Sans Mono","Courier New","Loma",monospace;font-size:16px}
+body::before{background:linear-gradient(rgba(0,0,0,.88),rgba(0,0,0,.95)),var(--bg-img,none) center/cover no-repeat!important}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;background:repeating-linear-gradient(0deg,rgba(0,255,100,.05) 0 1px,transparent 1px 3px)}
+#bg{display:none}
+@keyframes blink{50%{opacity:0}}
+.hp-head{background:#000;border-bottom:1px dashed #14532d}
+.hp-brand{font-family:ui-monospace,"DejaVu Sans Mono",monospace;color:#4ade80;letter-spacing:.04em;text-shadow:0 0 10px rgba(74,222,128,.6)}
+.hp-brand b{color:#86efac}
+.hp-brand::after{content:"_";animation:blink 1s steps(2) infinite}
+.hp-logo{border-radius:0;border:1px solid #22c55e;background:#000}
+.hp-nav a{border-radius:0;color:#86efac;font-size:14px}
+.hp-nav a::before{content:"[ "}.hp-nav a::after{content:" ]"}
+.hp-nav a:hover{background:#22c55e;color:#000}
+.badge{border-radius:0;background:#000;border:1px solid #22c55e;color:#4ade80}
+.badge.off{border-color:#ef4444;color:#f87171}
+.hp-head .gear{border-radius:0;background:#000;border:1px solid #14532d;color:#4ade80}
+.hp-hero{grid-template-columns:1fr;max-width:920px;gap:22px;padding-top:32px}
+.hp-cover{border-radius:0;border:1px dashed #22c55e;box-shadow:0 0 36px rgba(34,197,94,.25);aspect-ratio:21/9}
+.hp-cover .cover-img{filter:grayscale(1) sepia(1) hue-rotate(65deg) saturate(2.4) brightness(.8) contrast(1.15)}
+.hp-build{border-radius:0;background:#000;color:#4ade80;border:1px solid #22c55e;font-family:ui-monospace,monospace}
+.hp-copy{background:rgba(0,12,4,.94);border:1px solid #22c55e;border-radius:0;padding:0 28px 28px;box-shadow:0 0 28px rgba(34,197,94,.2)}
+.hp-copy::before{content:"●  ●  ●    trk@border-line:~$ ./download.sh";display:block;margin:0 -28px 22px;padding:10px 18px;border-bottom:1px solid #14532d;background:#04140a;color:#4ade80;font-size:13px}
+h1#title{font-family:ui-monospace,"DejaVu Sans Mono",monospace;font-size:clamp(24px,3.6vw,40px);color:#4ade80;text-transform:uppercase;text-shadow:0 0 14px rgba(74,222,128,.7)}
+h1#title::before{content:"$ ";color:#86efac}
+.hp-lead{color:#b7f5c8}
+.hp-story{border-left:2px solid #22c55e;color:#86efac}
+.hp-story::before{content:"// ";color:#22c55e}
+.hp-facts li{background:none;border:1px dashed #14532d;border-radius:0}
+.hp-facts span{text-transform:uppercase;letter-spacing:.1em;color:#4b8a62}
+.hp-facts b{color:#4ade80}
+.hp-dl{border-radius:0;background:#22c55e;color:#000;box-shadow:0 0 24px rgba(34,197,94,.55);font-family:ui-monospace,monospace}
+.hp-dl:hover:not(:disabled){background:#4ade80;filter:none;transform:none}
+.hp-dl-ic{border-radius:0;background:#000;color:#22c55e}
+.hp-dl:disabled{background:#06140a;color:#2f6a43;box-shadow:none;border:1px dashed #14532d}
+.hp-link{color:#86efac}
+.hp-copy .notice{border-radius:0;background:rgba(34,197,94,.06);border:1px dashed #22c55e}
+.hp-copy .n-icon,.hp-copy .n-title{color:#4ade80}.hp-copy .n-desc{color:#b7f5c8}
+.hp-copy .notice.off{background:rgba(239,68,68,.08);border-color:#ef4444}
+.hp-copy .notice.off .n-icon,.hp-copy .notice.off .n-title{color:#f87171}
+.hp-trust>div{border-radius:0;background:none;border:1px solid #14532d}
+.hp-sec h2{font-family:ui-monospace,"DejaVu Sans Mono",monospace;color:#4ade80;text-shadow:0 0 10px rgba(74,222,128,.5)}
+.hp-sec h2::before{content:"##";width:auto;height:auto;background:none;border-radius:0;color:#22c55e}
+.hp-steps li,.hp-spec{background:#030a04;border:1px dashed #14532d;border-radius:0}
+.hp-spec.rec{border:1px solid #22c55e}
+.hp-steps .n{display:inline-block;border-radius:0;background:#000;color:#22c55e;border:1px solid #22c55e;font:700 18px/1.4 ui-monospace,monospace;width:auto;height:auto;padding:4px 14px}
+.hp-steps .n::before{content:"["}.hp-steps .n::after{content:"]"}
+.hp-steps code{background:#000;color:#4ade80;border:1px solid #14532d;border-radius:0}
+.hp-spec .specs-t{color:#4ade80}.hp-spec .srow{border-top:1px dashed #14532d}.hp-spec .srow b{color:#4b8a62}
+.hp-foot{background:#000;border-top:1px dashed #14532d;color:#4ade80}
+.modal{--bg:#000;--card:#020a04;--bd:#14532d;color:#b7f5c8}
+.box{border-radius:0;border:1px solid #22c55e;box-shadow:0 0 30px rgba(34,197,94,.25)}
+.btn{background:#22c55e;color:#000;border-radius:0}.btn.ghost{background:#06140a;color:#86efac;border:1px solid #14532d}
+#prog{background:#22c55e}
+@media(max-width:900px){.hp-copy{padding:0 18px 22px}.hp-copy::before{margin:0 -18px 18px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.hp-brand::after{animation:none}}
