@@ -1,0 +1,47 @@
+/* ธีม A "ซีเนมา": ดำ + ส้มสว่าง ขอบคม ตัวอักษรใหญ่แบบโปสเตอร์หนัง */
+:root{--bg:#0a0a0b;--card:#111113;--bd:#2a2a2e;--olive:#ff6a1a;--amber:#ffb703;--ok:#ffb703}
+body::before{background:linear-gradient(90deg,rgba(6,6,7,.94) 0%,rgba(6,6,7,.72) 48%,rgba(6,6,7,.35) 100%),var(--bg-img,none) center/cover no-repeat!important}
+#bg{display:none}
+.hp-head{background:linear-gradient(rgba(6,6,7,.92),rgba(6,6,7,0));border-bottom:0}
+.hp-brand{letter-spacing:.16em;font-size:15px;text-transform:uppercase}
+.hp-brand b{color:#ff6a1a}
+.hp-logo{border-radius:2px;border-color:#ff6a1a}
+.hp-nav a{border-radius:2px;text-transform:uppercase;letter-spacing:.1em;font-size:13px}
+.hp-nav a:hover{background:#ff6a1a;color:#111}
+.badge{border-radius:2px}
+.hp-hero{grid-template-columns:1.2fr .8fr;gap:56px;min-height:min(86vh,760px);padding-top:24px}
+.hp-copy{background:none;border:0;padding:0;border-radius:0;grid-column:1;grid-row:1}
+.hp-visual{grid-column:2;grid-row:1}
+.hp-cover{border-radius:0;border:1px solid #3a3a40;box-shadow:none;clip-path:polygon(0 0,calc(100% - 30px) 0,100% 30px,100% 100%,30px 100%,0 calc(100% - 30px))}
+.hp-build{border-radius:0;background:#ff6a1a;color:#111;border:0}
+h1#title{font-size:clamp(38px,5.4vw,76px);line-height:1.02;text-transform:uppercase;text-shadow:none;margin-bottom:20px}
+.hp-lead{font-size:18px;max-width:34em;color:#d4d4d8}
+.hp-story{border-left:3px solid #ff6a1a;font-style:italic;color:#a1a1aa}
+.hp-facts{gap:0;border-top:1px solid #2a2a2e;border-bottom:1px solid #2a2a2e;padding:14px 0}
+.hp-facts li{background:none;border:0;border-radius:0;padding:0 28px 0 0;margin-right:28px;border-right:1px solid #2a2a2e}
+.hp-facts li:last-child{border:0;margin:0}
+.hp-facts span{text-transform:uppercase;letter-spacing:.12em;font-size:11px}
+.hp-dl{background:#ff6a1a;color:#111;border-radius:0;clip-path:polygon(0 0,100% 0,calc(100% - 24px) 100%,0 100%);box-shadow:none;max-width:540px;padding-right:48px}
+.hp-dl:hover:not(:disabled){background:#ff8240;filter:none}
+.hp-dl-ic{border-radius:2px;background:#111;color:#ff6a1a}
+.hp-dl:disabled{background:#2a2a2e;color:#8a8a92}
+.hp-link{color:#ffb703}
+.hp-copy .notice{border-radius:2px;background:rgba(255,183,3,.07);border-color:rgba(255,183,3,.4)}
+.hp-copy .n-icon,.hp-copy .n-title{color:#ffb703}
+.hp-copy .notice.off{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.5)}
+.hp-copy .notice.off .n-icon,.hp-copy .notice.off .n-title{color:#f87171}
+.hp-trust>div{border-radius:2px;background:rgba(0,0,0,.4);border-color:#2a2a2e}
+.hp-sec h2{text-transform:uppercase;letter-spacing:.06em}
+.hp-sec h2::before{background:#ff6a1a;width:28px;height:4px;border-radius:0}
+.hp-steps{gap:0;border-top:1px solid #2a2a2e}
+.hp-steps li{background:none;border:0;border-radius:0;padding:28px 32px 28px 0}
+.hp-steps .n{background:none;color:transparent;-webkit-text-stroke:1.5px #ff6a1a;font-size:60px;width:auto;height:auto;border-radius:0;display:block;line-height:1;margin-bottom:10px}
+.hp-steps .n::before{content:"0"}
+.hp-steps code{color:#ffb703;background:#1a1a1d}
+.hp-spec{background:none;border:0;border-top:2px solid #3a3a40;border-radius:0;padding:18px 0}
+.hp-spec.rec{border-top-color:#ff6a1a}
+.hp-spec .specs-t{color:#ff6a1a;text-transform:uppercase;letter-spacing:.14em;font-size:14px}
+.hp-spec .srow{border-top-color:#222226}
+.hp-foot{background:#060607;border-color:#222}
+.box{border-radius:4px}.btn{background:#ff6a1a;color:#111}.btn.ghost{background:#26262b;color:#ddd}#prog{background:#ff6a1a}
+@media(max-width:900px){.hp-brand{font-size:12px;letter-spacing:.08em}.badge{white-space:nowrap;font-size:11px}.hp-hero{padding-bottom:48px;grid-template-columns:1fr;gap:22px;min-height:0}.hp-visual{grid-column:1;grid-row:1}.hp-copy{grid-column:1;grid-row:2}.hp-steps li{padding-right:0}}

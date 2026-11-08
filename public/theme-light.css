@@ -1,0 +1,39 @@
+/* ธีม B "สว่างสะอาด": พื้นครีม การ์ดขาว เขียวเข้ม อ่านง่ายเหมือนหน้าสินค้า */
+:root{--bg:#f4f1ea;--card:#fff;--bd:#e2ddd0}
+body{background:#f4f1ea!important;color:#1c1f14}
+body::before,#bg{display:none!important}
+.hp-head{background:rgba(255,255,255,.94);border-bottom:1px solid #e2ddd0}
+.hp-brand{color:#1c1f14}.hp-brand b{color:#3f6212}
+.hp-logo{border-color:#3f6212}
+.hp-nav a{color:#4b5240}.hp-nav a:hover{background:#ecebdf;color:#111}
+.badge{background:#e8f3d8;border-color:#b5cf8a;color:#166534}
+.badge.off{background:#fdecea;border-color:#f0a8a0;color:#b91c1c}
+.hp-head .gear{background:#fff;color:#333;border-color:#e2ddd0}
+.hp-hero{padding-top:40px}
+.hp-copy{background:#fff;border:1px solid #e2ddd0;box-shadow:0 12px 40px rgba(60,60,30,.1);color:#1c1f14}
+.hp-cover{border-color:#e2ddd0;box-shadow:0 20px 50px rgba(60,60,30,.22)}
+h1#title{color:#1c1f14;text-shadow:none}
+.hp-lead{color:#3a3f30}
+.hp-story{color:#4b5240;border-left-color:#3f6212}
+.hp-facts li{background:#f4f1ea;border-color:#e2ddd0}.hp-facts b{color:#1c1f14}.hp-facts span{color:#6b7060}
+.hp-dl{background:#3f6212;color:#fff;box-shadow:0 10px 26px rgba(63,98,18,.32)}
+.hp-dl-ic{background:rgba(255,255,255,.2)}
+.hp-dl:disabled{background:#dedbd0;color:#7a7d70;box-shadow:none}
+.hp-link{color:#3f6212}
+.hp-copy .notice{background:#eef5e4;border-color:#b5cf8a}
+.hp-copy .n-icon,.hp-copy .n-title{color:#3f6212}.hp-copy .n-desc{color:#3a3f30}
+.hp-copy .notice.off{background:#fdecea;border-color:#f0a8a0}
+.hp-copy .notice.off .n-icon,.hp-copy .notice.off .n-title{color:#b91c1c}
+.hp-trust>div{background:#f4f1ea;border-color:#e2ddd0}
+.hp-trust small{color:#6b7060}.hp-trust b{color:#3a3f30}
+.hp-trust b.scan-ok{color:#166534}.hp-trust b.scan-warn{color:#b45309}.hp-trust b.scan-bad{color:#b91c1c}
+.hp-sec h2{color:#1c1f14}.hp-sec h2::before{background:#3f6212}
+.hp-steps li,.hp-spec{background:#fff;border-color:#e2ddd0;box-shadow:0 6px 24px rgba(60,60,30,.07)}
+.hp-steps h3{color:#1c1f14}.hp-steps p{color:#4b5240}
+.hp-steps .n{background:#3f6212;color:#fff}
+.hp-steps code{background:#ecebdf;color:#7c2d12}
+.hp-spec.rec{border-color:#3f6212}
+.hp-spec .specs-t{color:#3f6212}.hp-spec .srow{border-top-color:#eee9dc;color:#1c1f14}.hp-spec .srow b{color:#6b7060}
+.hp-foot{background:#fff;border-color:#e2ddd0;color:#6b7060}
+.modal{--bg:#0a0d08;--card:#121710;--bd:#263320}
+.modal{color:#f1f5f9}

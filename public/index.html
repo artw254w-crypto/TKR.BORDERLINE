@@ -11,70 +11,87 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/home.css">
+<link rel="stylesheet" href="/theme-cinema.css"><!-- ธีม A (ค่าเริ่มต้น) ถ้าอยากใช้ธีม B ให้เปลี่ยนชื่อไฟล์เป็น /theme-light.css -->
 <script src="/guard.js"></script>
 </head>
 <body>
 <div id="cursor"></div><div id="cursorDot"></div>
 <canvas id="bg"></canvas>
+<a class="hp-skip" href="#download">ข้ามไปที่ปุ่มดาวน์โหลด</a>
 
-<header class="top">
-  <div class="wrap bar">
-    <div class="brand orb"><span class="logo">🎯</span><span>T.R.K : <b>BORDER LINE</b></span></div>
-    <div class="bar-r">
+<header class="hp-head">
+  <div class="hp-wrap hp-bar">
+    <a class="hp-brand" href="#top"><span class="hp-logo" aria-hidden="true">🎯</span><span>T.R.K <b>BORDER LINE</b></span></a>
+    <nav class="hp-nav" aria-label="เมนูหลัก"><a href="#download">ดาวน์โหลด</a><a href="#steps">วิธีติดตั้ง</a><a href="#specs">สเปคเครื่อง</a></nav>
+    <div class="hp-right">
       <div id="hBadge" class="badge"><span class="dot pulse"></span><span id="hStatus">SERVER ONLINE</span></div>
       <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ" hidden>⚙</button>
     </div>
   </div>
 </header>
 
-<main class="wrap grid">
-  <section class="card left">
-    <div class="topline"></div>
-    <div class="cover"><img id="coverImg" class="cover-img" alt="" decoding="async" hidden><span id="coverHero" class="hero" hidden>🎯</span><span class="build orb">BUILD 2026.1</span></div>
-    <h1 id="title" class="orb">T.R.K : BORDER LINE</h1>
-    <p id="subtitle" class="desc">เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์</p>
-    <p id="story" class="story">ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม</p>
-    <div class="row"><span>💾 ขนาดไฟล์</span><b id="size" class="orb olive">15.1 GB</b></div>
-    <div class="row"><span>🔖 เวอร์ชั่น (Build)</span><b id="version" class="orb amber">v1.0.0</b></div>
-    <div class="row"><span>🖥 รองรับระบบ</span><b id="os">Windows 10/11 64-bit</b></div>
+<main id="top">
+  <section class="hp-wrap hp-hero">
+    <div class="hp-visual">
+      <div class="hp-cover">
+        <img id="coverImg" class="cover-img" alt="ภาพจากเกม" decoding="async" hidden>
+        <span id="coverHero" class="hero" hidden>🎯</span>
+        <span class="hp-build">BUILD 2026.1</span>
+      </div>
+    </div>
+
+    <div class="hp-copy">
+      <h1 id="title">T.R.K : BORDER LINE</h1>
+      <p id="subtitle" class="hp-lead">เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์</p>
+      <p id="story" class="hp-story">ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม</p>
+
+      <ul class="hp-facts" aria-label="ข้อมูลไฟล์">
+        <li><span>ขนาดไฟล์</span><b id="size">15.1 GB</b></li>
+        <li><span>เวอร์ชัน</span><b id="version">v1.0.0</b></li>
+        <li><span>รองรับระบบ</span><b id="os">Windows 10/11 64-bit</b></li>
+      </ul>
+
+      <div id="download" class="hp-cta">
+        <button id="dlBtn" class="hp-dl" type="button">
+          <span class="hp-dl-ic" aria-hidden="true">⬇</span>
+          <span class="hp-dl-tx"><span id="dlText">🚀 พร้อมดาวน์โหลด (คลิกที่นี่)</span><small>ระบบจะเตรียมลิงก์ให้ไม่กี่วินาที</small></span>
+        </button>
+        <button id="verifyBtn" class="hp-link" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม</button>
+      </div>
+
+      <div id="notice" class="notice">
+        <span id="noticeIcon" class="n-icon" aria-hidden="true">✔</span>
+        <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div></div>
+      </div>
+
+      <div class="hp-trust">
+        <div><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus">🟢 พร้อมใช้งาน (Ready)</b></div>
+        <div><small>ความปลอดภัยของไฟล์</small><b id="scanStat" class="scan-none">🛡 กำลังตรวจสอบสถานะ...</b><span id="scanSub" class="scan-sub"></span></div>
+      </div>
+    </div>
   </section>
 
-  <section class="card right">
-    <div class="topline alt"></div>
-    <div id="notice" class="notice">
-      <span id="noticeIcon" class="n-icon">✔</span>
-      <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div></div>
-    </div>
-    <div class="two">
-      <div class="stat"><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus">🟢 พร้อมใช้งาน (Ready)</b></div>
-      <div class="stat"><small>การตรวจสอบความปลอดภัย</small><b id="scanStat" class="scan-none">🛡 กำลังตรวจสอบสถานะ...</b><span id="scanSub" class="scan-sub"></span></div>
-    </div>
-    <button id="dlBtn" class="dl orb" type="button"><span id="dlText">🚀 พร้อมดาวน์โหลด (คลิกที่นี่)</span></button>
-    <button id="verifyBtn" class="vbtn" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม</button>
-    <div class="guide">
-      <h4>ℹ คำแนะนำในการติดตั้ง</h4>
-      <ul>
-        <li>แตกไฟล์ ZIP / RAR ด้วยโปรแกรม WinRAR หรือ 7-Zip เวอร์ชั่นล่าสุด</li>
-        <li>ปิดโปรแกรมป้องกันไวรัสชั่วคราวหากเกิดข้อผิดพลาดในการแตกไฟล์</li>
-        <li>รันไฟล์ <code>BORDERLINE2</code> ได้เลยทันที</li>
-      </ul>
+  <section id="steps" class="hp-wrap hp-sec" aria-labelledby="stepsT">
+    <h2 id="stepsT">ติดตั้งง่ายใน 3 ขั้นตอน</h2>
+    <ol class="hp-steps">
+      <li><span class="n">1</span><h3>ดาวน์โหลดไฟล์</h3><p>กดปุ่มดาวน์โหลด รอเตรียมลิงก์สักครู่แล้วกดเริ่มโหลด ควรมีพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</p></li>
+      <li><span class="n">2</span><h3>แตกไฟล์</h3><p>แตกไฟล์ ZIP / RAR ด้วย WinRAR หรือ 7-Zip เวอร์ชันล่าสุด หากแตกไฟล์ไม่ได้ ให้ปิดโปรแกรมป้องกันไวรัสชั่วคราวแล้วลองใหม่</p></li>
+      <li><span class="n">3</span><h3>เปิดเล่น</h3><p>เปิดไฟล์ <code>BORDERLINE2</code> ในโฟลเดอร์ที่แตกไว้ ได้เลยทันที</p></li>
+    </ol>
+  </section>
+
+  <section id="specs" class="hp-wrap hp-sec" hidden aria-labelledby="specsTitle">
+    <h2 id="specsTitle">ความต้องการของระบบ</h2>
+    <div class="hp-specs">
+      <div id="specMinBox" class="hp-spec"><h3 class="specs-t">ขั้นต่ำ</h3><div id="specMin"></div></div>
+      <div id="specRecBox" class="hp-spec rec"><h3 class="specs-t">แนะนำ</h3><div id="specRec"></div></div>
     </div>
   </section>
 </main>
 
-<section id="specs" class="wrap specs" hidden aria-labelledby="specsTitle">
-  <div class="card">
-    <div class="topline"></div>
-    <h2 id="specsTitle" class="orb specs-h">ความต้องการระบบ</h2>
-    <div class="specs-cols">
-      <div id="specMinBox"><h3 class="specs-t">ขั้นต่ำ:</h3><div id="specMin"></div></div>
-      <div id="specRecBox"><h3 class="specs-t">แนะนำ:</h3><div id="specRec"></div></div>
-    </div>
-  </div>
-</section>
-
-<footer class="foot">
-  <div class="wrap bar">
+<footer class="hp-foot">
+  <div class="hp-wrap hp-bar">
     <span>© 2026 PIXEL TECH SOFT Co., Ltd. All Rights Reserved.</span>
     <button id="footAdmin" class="link" type="button" hidden>⚙ แผงแอดมิน</button>
   </div>
