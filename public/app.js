@@ -356,6 +356,10 @@
   function fillForm(c) {
     $("fUrl").value = c.fileUrl; $("fTitle").value = c.title; $("fSize").value = c.fileSize;
     $("fVer").value = c.version; $("fMsg").value = c.maintenanceMsg; $("fCool").value = c.cooldownSec;
+    $("fMd5").value = c.fileMd5 || "";
+    $("modeNote").textContent = c.r2Mode
+      ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
+      : "โหมดส่งไฟล์: Google Drive — เว็บรู้เองไม่ได้ว่าผู้ใช้โหลดจบหรือไม่ ถ้าต้องการรู้ ให้ตั้งค่า Cloudflare R2 ตามไฟล์ README-R2.txt";
     document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
     hide("saveErr"); hide("saveOk");
   }
@@ -426,6 +430,7 @@
       status: document.querySelector('input[name="status"]:checked').value,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
+      fileMd5: $("fMd5").value,
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";
     if (r.status === 401) { adminLost(); hide("panel"); return openLogin(); }
@@ -494,15 +499,29 @@
     ok: "พร้อมโหลด", bad_url: "ลิงก์ไม่ถูกต้อง", folder: "เป็นโฟลเดอร์", google_native: "ไม่ใช่ไฟล์ให้โหลด", not_found: "ไม่พบไฟล์",
     trashed: "อยู่ในถังขยะ", no_permission: "ไม่ได้แชร์", quota_exceeded: "โควต้าเต็ม", rate_limited: "ถูกจำกัดความถี่",
     drive_error: "Drive ขัดข้อง", virus_scan: "หน้าเตือนไวรัส", html_unknown: "ตอบเป็นหน้าเว็บ", empty_file: "ไฟล์ 0 ไบต์",
-    size_conflict: "ขนาดไม่ตรง", timeout: "Drive ตอบช้า", network: "เชื่อมต่อไม่ได้",
+    size_conflict: "ขนาดไม่ตรง", timeout: "ตอบช้า", network: "เชื่อมต่อไม่ได้", r2_unavailable: "ติดต่อ R2 ไม่ได้", unauthorized: "รหัสไม่ตรง",
   };
   const VERIFY_SHORT = {
     ok: "ไฟล์สมบูรณ์", ok_size_only: "ขนาดตรง (ไม่มี MD5)", corrupt_size: "ไฟล์เสีย (ขนาดไม่ตรง)", corrupt_md5: "ไฟล์เสีย (MD5 ไม่ตรง)",
-    unverifiable: "ตรวจไม่ได้", drive_unavailable: "ตรวจไม่ได้ (Drive มีปัญหา)",
+    unverifiable: "ตรวจไม่ได้", drive_unavailable: "ตรวจไม่ได้ (ที่เก็บไฟล์มีปัญหา)",
   };
   const sevIcon = (sev) => sev === "ok" ? "✅ " : sev === "warn" ? "⚠ " : "❌ ";
   const sevCls = (sev) => "tag " + (sev === "ok" ? "ok" : sev === "warn" ? "warn" : "bad");
   const isProblem = (e) => !!((e.drive && e.drive.sev !== "ok") || (e.verify && e.verify.level !== "ok"));
+
+  // สถานะการโหลดจริงจาก Cloudflare R2 (มีเฉพาะรายการที่ส่งไฟล์ผ่าน R2) : โหลดจบ / กำลังโหลด / โหลดไม่จบ
+  const DELIVERY_TXT = {
+    complete: "✅ โหลดจบ (ส่งไฟล์ครบแล้ว)", started: "⏳ กำลังโหลด", partial: "⚠ โหลดไม่จบ (ถูกยกเลิก/ขาดการเชื่อมต่อกลางทาง)", none: "ยังไม่เริ่มส่งไฟล์",
+  };
+  const PART_TXT = { run: "⏳ กำลังส่ง", ok: "✅ ส่งครบช่วงนี้", abort: "⚠ ถูกตัดกลางทาง", err: "❌ ผิดพลาด" };
+  const shortBytes = (n) => !Number.isFinite(n) ? "-" : n >= 1073741824 ? (n / 1073741824).toFixed(2) + " GB" : n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : n + " ไบต์";
+  const deliveryCell = (e) => {
+    const st = e.delivery && e.delivery.state;
+    if (st === "complete") return { text: "✅ โหลดจบ", cls: "tag ok", title: "Cloudflare R2 ส่งไฟล์ครบแล้ว (ตรวจ MD5 ที่ผู้ใช้เพื่อยืนยันว่าไฟล์ไม่เสียหาย)" };
+    if (st === "started") return { text: "⏳ กำลังโหลด", cls: "tag wait", title: "เริ่มส่งไฟล์แล้ว ยังไม่มีรายงานสิ้นสุด (กดรีเฟรชเพื่อดูล่าสุด)" };
+    if (st === "partial") return { text: "⚠ โหลดไม่จบ", cls: "tag warn", title: "ผู้ใช้ยกเลิกหรือขาดการเชื่อมต่อกลางทาง (ถ้าผู้ใช้กดโหลดต่อ สถานะจะอัปเดตเอง)" };
+    return null; // none = ยังไม่เริ่มส่ง → ใช้ป้ายเดิม (ขอลิงก์ / กดดาวน์โหลดแล้ว)
+  };
 
   const driveCell = (e) => e.drive
     ? { text: sevIcon(e.drive.sev) + (DRIVE_SHORT[e.drive.code] || e.drive.title), cls: sevCls(e.drive.sev), title: e.drive.title }
@@ -512,12 +531,12 @@
     : e.clicked ? { text: "⏳ ผู้ใช้ยังไม่ได้ตรวจไฟล์", cls: "tag wait", title: "เว็บรู้ไม่ได้เองว่าโหลดจบหรือไฟล์เสียหรือไม่ จนกว่าผู้ใช้จะกดตรวจไฟล์" } : { text: "-" };
 
   // บรรทัดรายละเอียดของผลตรวจ Google Drive (ใช้ทั้งในแถวขยายและกล่อง "ตรวจตอนนี้")
-  function driveLines(d) {
+  function driveLines(d, r2) {
     const out = [];
     if (d.hint) out.push(["วิธีแก้", d.hint]);
     if (d.detail) out.push(["รายละเอียด", d.detail]);
-    out.push(["ข้อมูลทางเทคนิค", `HTTP ${d.http || "-"} · Drive API ${d.apiHttp || "-"} · ใช้เวลา ${d.ms ?? "-"} ms · ตรวจเมื่อ ${d.checkedAt ? fmtTime(d.checkedAt) : "-"}`]);
-    out.push(["ไฟล์บน Drive", `${d.name ? `"${d.name}" · ` : ""}ขนาด ${d.size != null ? fmtBytes(d.size) : "ไม่ทราบ"} · MD5 ${d.md5 || "ไม่มี (ตั้ง GOOGLE_API_KEY เพื่อให้ตรวจเนื้อไฟล์ได้)"}`]);
+    out.push(["ข้อมูลทางเทคนิค", `HTTP ${d.http || "-"} · ${r2 ? "R2" : "Drive API " + (d.apiHttp || "-")} · ใช้เวลา ${d.ms ?? "-"} ms · ตรวจเมื่อ ${d.checkedAt ? fmtTime(d.checkedAt) : "-"}`]);
+    out.push([r2 ? "ไฟล์ใน R2" : "ไฟล์บน Drive", `${d.name ? `"${d.name}" · ` : ""}ขนาด ${d.size != null ? fmtBytes(d.size) : "ไม่ทราบ"} · MD5 ${d.md5 || (r2 ? "ไม่มี (กรอก MD5 ในแผงแอดมิน หัวข้อ 3 เพื่อให้ตรวจเนื้อไฟล์ได้)" : "ไม่มี (ตั้ง GOOGLE_API_KEY เพื่อให้ตรวจเนื้อไฟล์ได้)")}`]);
     return out;
   }
 
@@ -536,30 +555,39 @@
     line(td, "ผู้ใช้", `${e.ip || "-"} · ${[e.country, e.city].filter(Boolean).join(" · ") || "ไม่ทราบที่ตั้ง"} · ${e.ua ? uaOS(e.ua) + " / " + uaBrowser(e.ua) : "ไม่ทราบอุปกรณ์"} · เวอร์ชัน ${e.ver || "-"}`);
     if (e.ua) line(td, "User-Agent", e.ua);
     line(td, "การดาวน์โหลด", `ขอลิงก์เมื่อ ${fmtTime(e.t)} · ` + (e.clicked ? `กดดาวน์โหลดเมื่อ ${e.clickedAt ? fmtTime(e.clickedAt) : "-"}` : "ยังไม่ได้กดปุ่มดาวน์โหลด"));
+    const isR2 = e.src === "r2", store = isR2 ? "R2" : "Google Drive";
     if (e.drive) {
-      line(td, "Google Drive ตอนส่งลิงก์", sevIcon(e.drive.sev) + e.drive.title);
-      for (const [k, v] of driveLines(e.drive)) line(td, "　" + k, v);
-    } else line(td, "Google Drive", "ไม่ได้ตรวจ (รายการนี้บันทึกก่อนเปิดระบบตรวจ Drive หรือตรวจไม่สำเร็จตอนนั้น)");
+      line(td, store + " ตอนส่งลิงก์", sevIcon(e.drive.sev) + e.drive.title);
+      for (const [k, v] of driveLines(e.drive, isR2)) line(td, "　" + k, v);
+    } else line(td, store, "ไม่ได้ตรวจ (รายการนี้บันทึกก่อนเปิดระบบตรวจ หรือตรวจไม่สำเร็จตอนนั้น)");
+    if (e.delivery) {
+      const d = e.delivery;
+      line(td, "การส่งไฟล์ (R2)", `${DELIVERY_TXT[d.state] || d.state} · ${d.reqs || 0} คำขอ · ถูกตัดกลางทาง ${d.aborted || 0} ครั้ง` +
+        (d.doneAt ? ` · จบเมื่อ ${fmtTime(d.doneAt)}` : d.lastAt ? ` · รายงานล่าสุด ${fmtTime(d.lastAt)}` : ""));
+      for (const p of (d.parts || []).slice(-6)) line(td, "　คำขอ", `ไบต์ ${shortBytes(p.a)} ถึง ${shortBytes(p.b)} · ${PART_TXT[p.s] || p.s} · ${fmtTime(p.t)}`);
+    }
     if (e.verify) {
       const v = e.verify;
       line(td, "ไฟล์ที่ผู้ใช้โหลดมา", sevIcon(v.level) + v.title);
       if (v.detail) line(td, "　รายละเอียด", v.detail);
       line(td, "　ไฟล์ที่ผู้ใช้เลือก", `${v.name ? `"${v.name}" · ` : ""}ขนาด ${fmtBytes(v.size)} · MD5 ${v.md5 || "ไม่ได้คำนวณ"} · ตรวจเมื่อ ${fmtTime(v.at)}`);
-    } else if (e.clicked) line(td, "ไฟล์ที่ผู้ใช้โหลดมา", "ผู้ใช้ยังไม่ได้กดตรวจไฟล์ (เว็บรู้ไม่ได้เองว่าเบราว์เซอร์โหลดจบหรือไฟล์เสียหรือไม่)");
+    } else if (e.clicked) line(td, "ไฟล์ที่ผู้ใช้โหลดมา", e.delivery
+      ? "ผู้ใช้ยังไม่ได้กดตรวจไฟล์ (ตรวจ MD5 ช่วยยืนยันว่าไฟล์ไม่เสียหายหลังโหลดจบ)"
+      : "ผู้ใช้ยังไม่ได้กดตรวจไฟล์ (เว็บรู้ไม่ได้เองว่าเบราว์เซอร์โหลดจบหรือไฟล์เสียหรือไม่)");
     return tr;
   }
 
   async function checkDriveNow() {
     const box = $("driveNow"), btn = $("logCheck");
-    btn.disabled = true; box.className = "vres"; $("dnTitle").textContent = "กำลังตรวจ Google Drive..."; $("dnDetail").textContent = ""; box.hidden = false;
+    btn.disabled = true; box.className = "vres"; $("dnTitle").textContent = "กำลังตรวจที่เก็บไฟล์..."; $("dnDetail").textContent = ""; box.hidden = false;
     const r = await api("/api/admin-log?check=1");
     btn.disabled = false;
     if (r.status === 401) { adminLost(); hide("logs"); hide("panel"); return openLogin(); }
-    if (!r.ok || !r.data.drive) { box.className = "vres error"; $("dnTitle").textContent = "ตรวจ Google Drive ไม่สำเร็จ"; $("dnDetail").textContent = "เซิร์ฟเวอร์ตรวจไม่ได้ ลองใหม่อีกครั้ง"; return; }
+    if (!r.ok || !r.data.drive) { box.className = "vres error"; $("dnTitle").textContent = "ตรวจที่เก็บไฟล์ไม่สำเร็จ"; $("dnDetail").textContent = "เซิร์ฟเวอร์ตรวจไม่ได้ ลองใหม่อีกครั้ง"; return; }
     const d = r.data.drive;
     box.className = "vres " + (d.sev === "ok" ? "ok" : d.sev === "warn" ? "warn" : "error");
     $("dnTitle").textContent = "ลิงก์ดาวน์โหลดปัจจุบัน: " + sevIcon(d.sev) + d.title;
-    $("dnDetail").textContent = driveLines(d).map(([k, v]) => `${k}: ${v}`).join("\n");
+    $("dnDetail").textContent = driveLines(d, r.data.r2).map(([k, v]) => `${k}: ${v}`).join("\n");
   }
 
   function logRow(cells, cls) {
@@ -586,7 +614,7 @@
     const { total, last24, items } = r.data;
     const bad = items.filter(isProblem).length;
     $("logSum").textContent = `ทั้งหมด ${total} ครั้ง · 24 ชั่วโมงล่าสุด ${last24} ครั้ง · เก็บย้อนหลัง 90 วัน` + (bad ? ` · ⚠ พบปัญหา ${bad} รายการ (ในที่แสดงอยู่)` : "") +
-      ` — ผลตรวจ Google Drive บันทึกตอนส่งลิงก์ ส่วนผลตรวจไฟล์ที่โหลดมาจะขึ้นเมื่อผู้ใช้กดตรวจไฟล์ในหน้าเว็บ (เว็บรู้เองไม่ได้ว่าโหลดจบหรือไม่) · คลิกแถวเพื่อดูรายละเอียด`;
+      ` — ผลตรวจที่เก็บไฟล์บันทึกตอนส่งลิงก์ · สถานะ "โหลดจบ" แสดงเมื่อใช้ Cloudflare R2 (ถ้าใช้ Google Drive เว็บรู้เองไม่ได้ว่าโหลดจบหรือไม่) · ผลตรวจไฟล์ขึ้นเมื่อผู้ใช้กดตรวจ MD5 ในหน้าเว็บ · คลิกแถวเพื่อดูรายละเอียด`;
     if (!items.length) body.appendChild(logRow([{ text: "ยังไม่มีผู้ดาวน์โหลด" }], "empty"));
     for (const e of items) {
       const main = logRow([
@@ -595,7 +623,7 @@
         { text: e.ua ? uaOS(e.ua) : "-", title: e.ua || "" },
         { text: e.ua ? uaBrowser(e.ua) : "-", title: e.ua || "" },
         { text: e.ver || "-" },
-        e.clicked ? { text: "✅ กดดาวน์โหลดแล้ว", cls: "tag ok" } : { text: "⏳ ขอลิงก์ (ยังไม่กดโหลด)", cls: "tag wait" },
+        deliveryCell(e) || (e.clicked ? { text: "✅ กดดาวน์โหลดแล้ว", cls: "tag ok" } : { text: "⏳ ขอลิงก์ (ยังไม่กดโหลด)", cls: "tag wait" }),
         driveCell(e), verifyCell(e),
       ]);
       main.classList.add("lrow");

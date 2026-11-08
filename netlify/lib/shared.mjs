@@ -1,12 +1,14 @@
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 import { probeDrive, extractFileId } from "./drive.mjs";
+import { r2Config, probeR2Cached } from "./r2.mjs";
 
 export const DEFAULTS = {
   title: "T.R.K : BORDER LINE",
   subtitle: "เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์",
   fileUrl: "https://drive.google.com/",
   fileSize: "15.1 GB",
+  fileMd5: "", // MD5 ของไฟล์เกม (ไม่บังคับ) ใช้กับโหมด R2 เมื่อไฟล์ใน R2 ไม่ได้ฝัง MD5 ไว้ (ดูได้จากผลสแกน)
   version: "v1.0.0",
   os: "Windows 10/11 64-bit",
   status: "ONLINE",
@@ -198,6 +200,11 @@ export function validateConfig(input, current) {
   out.title = clean(input.title, 60);
   out.fileSize = clean(input.fileSize, 20);
   out.version = clean(input.version, 20);
+  {
+    const m = input.fileMd5 === undefined ? String(current.fileMd5 || "") : clean(input.fileMd5, 40).toLowerCase();
+    if (m && !/^[a-f0-9]{32}$/.test(m)) return { error: "MD5 ต้องเป็นเลขฐานสิบหก 32 ตัว (หรือเว้นว่าง)" };
+    out.fileMd5 = m;
+  }
   out.maintenanceMsg = clean(input.maintenanceMsg, 200);
   if (!out.title || !out.fileSize || !out.version) return { error: "กรอกชื่อเกม ขนาดไฟล์ และเวอร์ชั่นให้ครบ" };
   if (input.status !== "ONLINE" && input.status !== "OFFLINE") return { error: "สถานะไม่ถูกต้อง" };
@@ -355,16 +362,19 @@ export function validateScanReport(b) {
 const SCAN_TTL_MS = 60 * 1000;
 let scanCache = null;
 export async function scanStatus(cfg, { fresh = false } = {}) {
-  if (!fresh && scanCache && Date.now() - scanCache.at < SCAN_TTL_MS && scanCache.url === cfg.fileUrl) return scanCache.val;
+  if (!fresh && scanCache && Date.now() - scanCache.at < SCAN_TTL_MS && scanCache.url === cfg.fileUrl + "|" + (cfg.fileMd5 || "") + "|" + (r2Config() ? "r2" : "drive")) return scanCache.val;
   const rec = await getScan();
   let val;
   if (!rec) {
     val = { state: "none", detail: { hasKey: !!process.env.GOOGLE_API_KEY } };
   } else {
-    const id = extractFileId(cfg.fileUrl).id || "";
+    const r2 = r2Config();
+    const id = r2 ? "r2" : (extractFileId(cfg.fileUrl).id || "");
     let liveMd5 = "", liveSize = null;
     try {
-      const live = await probeDriveCached(cfg.fileUrl, { timeoutMs: 4000, fresh });
+      const live = r2
+        ? await probeR2Cached(r2, { timeoutMs: 4000, fresh, fileMd5: cfg.fileMd5 || "" })
+        : await probeDriveCached(cfg.fileUrl, { timeoutMs: 4000, fresh });
       liveMd5 = live.md5 || ""; liveSize = live.size;
     } catch {}
     // เทียบกับไฟล์ปัจจุบัน: true = ตรงกัน, false = คนละไฟล์/ถูกเปลี่ยน, null = ยืนยันไม่ได้
@@ -383,7 +393,7 @@ export async function scanStatus(cfg, { fresh = false } = {}) {
         toolVersion: rec.toolVersion, engineVersion: rec.engineVersion, sigVersion: rec.sigVersion },
     };
   }
-  scanCache = { at: Date.now(), url: cfg.fileUrl, val };
+  scanCache = { at: Date.now(), url: cfg.fileUrl + "|" + (cfg.fileMd5 || "") + "|" + (r2Config() ? "r2" : "drive"), val };
   return val;
 }
 export const clearScanCache = () => { scanCache = null; };

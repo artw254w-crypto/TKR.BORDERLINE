@@ -1,5 +1,6 @@
 import { json, safeEqual, clientIp, rateLimit, readJson, getConfig, saveScan, validateScanReport, clearScanCache } from "../lib/shared.mjs";
 import { extractFileId } from "../lib/drive.mjs";
+import { r2Config } from "../lib/r2.mjs";
 
 // รับผลสแกนไวรัสจากสคริปต์ของผู้ดูแล (tools/scan-and-report.ps1 หรือ .sh)
 // ยืนยันตัวตนด้วย Bearer token (ตัวแปร SCAN_REPORT_TOKEN ใน Netlify) ไม่ใช้คุกกี้ จึงไม่โดน CSRF จากเว็บอื่น
@@ -22,7 +23,7 @@ export default async (req, ctx) => {
   if (v.error) return json({ error: v.error }, 400);
 
   const cfg = await getConfig();
-  const rec = { ...v.value, at: Date.now(), fileId: extractFileId(cfg.fileUrl).id || "" };
+  const rec = { ...v.value, at: Date.now(), fileId: r2Config() ? "r2" : (extractFileId(cfg.fileUrl).id || "") };
   await saveScan(rec);
   clearScanCache();
   return json({ ok: true, result: rec.result, md5: rec.md5 });

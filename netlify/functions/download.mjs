@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { json, sign, verify, sameOrigin, clientIp, rateLimit, readJson, getConfig, logDownload, markClicked,
   getLog, updateLog, probeDriveCached, driveSummary } from "../lib/shared.mjs";
 import { compareVerify } from "../lib/drive.mjs";
+import { r2Config, signR2Url, probeR2Cached } from "../lib/r2.mjs";
 
 const logKey = (p) => `${String(p.t).padStart(13, "0")}-${String(p.n).replace(/[^a-f0-9]/g, "")}`;
 const VERIFY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // ตรวจไฟล์ที่โหลดมาได้ภายใน 7 วันหลังขอลิงก์ (ไฟล์ใหญ่โหลดนาน)
@@ -37,8 +38,14 @@ export default async (req, ctx) => {
     if (elapsed < p.w * 1000) return json({ error: "too_early" }, 403);
     // ตรวจ Google Drive ตอนส่งลิงก์ (แคช 60 วินาทีต่อไฟล์ จึงแทบไม่หน่วง) แล้วเก็บผลละเอียดลงประวัติ
     // ผลตรวจเป็น "error" ก็ยังส่งลิงก์ให้ตามเดิม แต่แอดมินจะเห็นสาเหตุในประวัติทันที
+    // โหมด R2 (ตั้ง R2_WORKER_URL ฯลฯ ครบ): ตรวจไฟล์ใน R2 แทน และออกลิงก์ที่เซ็นแล้วชี้ไปที่ Worker (รู้ว่าโหลดจบหรือไม่)
+    const r2 = r2Config();
     let drive = null;
-    try { drive = driveSummary(await probeDriveCached(cfg.fileUrl, { timeoutMs: 4000 })); } catch {}
+    try {
+      drive = driveSummary(r2
+        ? await probeR2Cached(r2, { timeoutMs: 4000, fileMd5: cfg.fileMd5 || "" })
+        : await probeDriveCached(cfg.fileUrl, { timeoutMs: 4000 }));
+    } catch {}
     // บันทึกประวัติ (เกิดขึ้นที่นี่เสมอที่ลิงก์ถูกส่งออก จึงข้ามไม่ได้) ถ้าบันทึกพลาดไม่ให้กระทบการดาวน์โหลด
     try {
       await logDownload(logKey(p), {
@@ -50,9 +57,10 @@ export default async (req, ctx) => {
         ver: cfg.version,
         clicked: false,
         drive,
+        ...(r2 ? { src: "r2", delivery: { total: (drive && drive.size) || 0, parts: [], reqs: 0, aborted: 0, errors: 0, state: "none" } } : {}),
       });
     } catch {}
-    return json({ url: cfg.fileUrl });
+    return json({ url: r2 ? signR2Url(r2, logKey(p)) : cfg.fileUrl });
   }
 
   // ผู้ใช้กดปุ่ม "เริ่มดาวน์โหลด!" จริง (ใช้แยกระหว่าง "ขอลิงก์" กับ "กดดาวน์โหลดแล้ว")
@@ -84,7 +92,11 @@ export default async (req, ctx) => {
     let drive = entry.drive;
     let reprobed = false;
     if (!drive || drive.sev === "error" || drive.size == null) {
-      try { drive = driveSummary(await probeDriveCached((await getConfig()).fileUrl, { fresh: true })); reprobed = true; } catch {}
+      try {
+        const c2 = await getConfig(), r2 = r2Config();
+        drive = driveSummary(r2 ? await probeR2Cached(r2, { fresh: true, fileMd5: c2.fileMd5 || "" }) : await probeDriveCached(c2.fileUrl, { fresh: true }));
+        reprobed = true;
+      } catch {}
     }
 
     let result;
@@ -96,6 +108,11 @@ export default async (req, ctx) => {
         detail: [drive.detail, drive.hint].filter(Boolean).join(" · ") };
     } else {
       result = compareVerify({ size: drive.size, md5: drive.md5, name: drive.name }, actual, { skipMd5: body.skipMd5 === true });
+    }
+
+    if (r2Config()) {
+      const L = (t) => String(t ?? "").replace(/Google Drive/g, "ที่เก็บไฟล์").replace(/Drive/g, "ที่เก็บไฟล์");
+      result = { ...result, title: L(result.title), detail: L(result.detail) };
     }
 
     // บันทึกผลตรวจ Drive ใหม่ทันทีแม้ยังต้องรอ MD5 (ไม่งั้นประวัติจะค้างสถานะเก่าที่ Drive เคยพัง)

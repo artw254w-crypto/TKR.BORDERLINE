@@ -153,12 +153,14 @@
         <input id="fCool" type="number" min="1" max="30" required>
       </section>
       <section class="sec"><h4 class="sec-t"><span class="no">3</span>ข้อมูลเกมและลิงก์ดาวน์โหลด</h4>
-        <label>URL ลิงก์ดาวน์โหลด (https เท่านั้น)<input id="fUrl" type="url" required maxlength="2000"></label>
+        <label>URL ลิงก์ดาวน์โหลด Google Drive (ไม่ถูกใช้เมื่อเปิดโหมด R2)<input id="fUrl" type="url" required maxlength="2000"></label>
         <div class="two">
           <label>ชื่อเกม<input id="fTitle" type="text" required maxlength="60"></label>
           <label>ขนาดไฟล์<input id="fSize" type="text" required maxlength="20"></label>
         </div>
         <label>เวอร์ชั่น<input id="fVer" type="text" required maxlength="20"></label>
+        <label>MD5 ของไฟล์เกม (ไม่บังคับ ใช้กับโหมด R2 ถ้าไฟล์ใน R2 ไม่ได้ฝัง MD5 ไว้ ดูค่าได้จากผลสแกน)<input id="fMd5" type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="เลขฐานสิบหก 32 ตัว"></label>
+        <p id="modeNote" class="hint left"></p>
       </section>
       <section class="sec"><h4 class="sec-t"><span class="no">4</span>ผลสแกนไวรัสของไฟล์เกม</h4>
         <div id="scanAd" class="vres"><b id="scanAdTitle">กำลังโหลด...</b><span id="scanAdDetail"></span></div>
@@ -230,13 +232,13 @@
     <div id="logErr" class="err" hidden></div>
     <div class="logwrap">
       <table>
-        <thead><tr><th>เวลา</th><th>IP</th><th>ที่ตั้ง</th><th>ระบบปฏิบัติการ</th><th>เว็บเบราว์เซอร์</th><th>เวอร์ชัน</th><th>สถานะ</th><th>Google Drive</th><th>ไฟล์ที่ผู้ใช้โหลด</th></tr></thead>
+        <thead><tr><th>เวลา</th><th>IP</th><th>ที่ตั้ง</th><th>ระบบปฏิบัติการ</th><th>เว็บเบราว์เซอร์</th><th>เวอร์ชัน</th><th>สถานะ</th><th>ที่เก็บไฟล์</th><th>ไฟล์ที่ผู้ใช้โหลด</th></tr></thead>
         <tbody id="logBody"></tbody>
       </table>
     </div>
     <div class="btns end">
       <button id="logClear" class="btn ghost" type="button">🗑 ล้างประวัติ</button>
-      <button id="logCheck" class="btn ghost" type="button">☁ ตรวจลิงก์ Drive ตอนนี้</button>
+      <button id="logCheck" class="btn ghost" type="button">☁ ตรวจที่เก็บไฟล์ตอนนี้</button>
       <button id="logMore" class="btn ghost" type="button" hidden>โหลดเพิ่ม</button>
       <button id="logRefresh" class="btn" type="button">🔄 รีเฟรช</button>
     </div>
