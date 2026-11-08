@@ -92,6 +92,7 @@
     $("title").textContent = cfg.title;
     document.title = cfg.title;
     $("subtitle").textContent = cfg.subtitle;
+    const st = $("story"); st.textContent = cfg.story || ""; st.hidden = !cfg.story;
     $("size").textContent = cfg.fileSize;
     $("version").textContent = cfg.version;
     $("os").textContent = cfg.os;
@@ -356,6 +357,7 @@
   function fillForm(c) {
     $("fUrl").value = c.fileUrl; $("fTitle").value = c.title; $("fSize").value = c.fileSize;
     $("fVer").value = c.version; $("fMsg").value = c.maintenanceMsg; $("fCool").value = c.cooldownSec;
+    $("fSub").value = c.subtitle || ""; $("fStory").value = c.story || "";
     $("fMd5").value = c.fileMd5 || "";
     $("modeNote").textContent = c.r2Mode
       ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
@@ -430,6 +432,7 @@
       status: document.querySelector('input[name="status"]:checked').value,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
+      subtitle: $("fSub").value, story: $("fStory").value,
       fileMd5: $("fMd5").value,
     });
     btn.disabled = false; btn.textContent = "💾 บันทึก";

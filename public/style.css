@@ -242,3 +242,6 @@ html.dt-open::after{content:"ปิดเครื่องมือนักพ
   .savebar{margin:16px -14px 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));border-radius:0}
   .sec{padding:14px}
 }
+
+textarea{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:10px;background:#020617;border:1px solid var(--bd,#263320);color:#fff;font:inherit;font-size:13px;line-height:1.6;resize:vertical;min-height:70px;-webkit-user-select:text;user-select:text}
+textarea:focus{outline:none;border-color:var(--olive,#65a30d)}
