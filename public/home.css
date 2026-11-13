@@ -98,3 +98,6 @@ h1#title{font:900 clamp(28px,3.5vw,42px)/1.15 "Orbitron","Prompt",sans-serif;let
 .swB{background:linear-gradient(90deg,#f4f1ea 0 45%,#fff 45% 70%,#3f6212 70%)}
 .swC{background:linear-gradient(90deg,#000 0 50%,#22c55e 50% 75%,#86efac 75%)}
 .swD{background:linear-gradient(90deg,#ffe14d 0 40%,#ff3d81 40% 70%,#111 70%)}
+
+.swE{background:linear-gradient(90deg,#00050d 0 40%,#00e5ff 40% 70%,#ff2bd6 70%)}
+.cy-sys{display:none}
