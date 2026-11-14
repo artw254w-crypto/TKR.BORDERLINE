@@ -99,7 +99,7 @@
     if (!oa) { if (cd) cd.hidden = true; return; }
     const ms = oa - (Date.now() + skew), v = left(ms);
     buildOpenCd(); cd.hidden = false;
-    cd.querySelectorAll("b").forEach((b) => { b.textContent = String(v[b.dataset.u]).padStart(2, "0"); });
+    window.trkCd.bind(cd, () => (cfg && cfg.openAt ? cfg.openAt : 0) - (Date.now() + skew), "open"); // ตัวเลขวิ่งแล้วล็อกเป็นเวลาจริง (cdfx.js)
     $("dlText").textContent = `🔒 เปิดให้ดาวน์โหลดในอีก ${v.d ? v.d + " วัน " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`;
     if (ms <= 0 && Date.now() - openRefetch > 2000) { openRefetch = Date.now(); loadConfig(); }
   }
@@ -908,7 +908,7 @@
     if (e.key === "Escape") { closePopup(); hide("verify"); hide("login"); hide("logs"); hide("images"); hide("specsEdit"); hide("panel"); }
   });
 
-  // เรียลไทม์: ดึงสถานะล่าสุดทุก 4 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
+  // เรียลไทม์: ดึงสถานะล่าสุดทุก 2 วินาที (เฉพาะตอนเปิดหน้าอยู่) และทันทีที่กลับมาที่แท็บ
   let polling = false;
   async function poll() {
     if (document.hidden || polling || saving) return;
@@ -917,7 +917,7 @@
     polling = false;
     if (r.ok && !saving) { ingest(r.data); if (JSON.stringify(r.data) !== JSON.stringify(cfg)) { cfg = r.data; render(); } }
   }
-  setInterval(poll, 4000);
+  setInterval(poll, 2000);
   document.addEventListener("visibilitychange", poll);
   addEventListener("focus", poll);
   // แท็บอื่นในเบราว์เซอร์เดียวกันอัปเดตทันที

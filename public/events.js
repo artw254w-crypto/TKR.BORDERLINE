@@ -20,13 +20,45 @@
     const anchor = $("steps"); anchor.parentNode.insertBefore(root, anchor);
   }
 
+  // ใส่วิดีโอให้ <video>: เล่นตรงก่อน ถ้าเล่นไม่ขึ้น (error หรือไม่เริ่มใน 12 วิ) สลับไปทางสำรอง
+  // = โหลดทีละชิ้น 1 MB ด้วย fetch ธรรมดา (ไม่พึ่ง Range) ประกอบเป็นไฟล์ในเครื่องแล้วเล่น ใช้ได้แม้การสตรีมถูกตัด/บล็อก
+  function attachVideo(el, v, onFail, note) {
+    const url = "/api/video/" + v.id; let fell = false, timer = 0;
+    const fallback = async () => {
+      if (fell) return; fell = true; clearTimeout(timer);
+      const SL = 1048576, n = Math.max(1, Math.ceil(v.size / SL)), parts = new Array(n); let done = 0, bad = false, next = 0;
+      note("กำลังโหลดวิดีโอ 0% ...");
+      const worker = async () => {
+        while (!bad) {
+          const i = next++; if (i >= n) return;
+          const a = i * SL, z = Math.min(v.size, (i + 1) * SL) - 1; let ok = false;
+          for (let t = 0; t < 4 && !ok; t++) {
+            try { const r = await fetch(`${url}?s=${a}&e=${z}`, { credentials: "same-origin" }); if (r.ok) { const b = await r.arrayBuffer(); if (b.byteLength === z - a + 1) { parts[i] = b; ok = true; } } } catch {}
+            if (!ok) await new Promise((r) => setTimeout(r, 400 * (t + 1)));
+          }
+          if (!ok) { bad = true; return; }
+          done++; note(`กำลังโหลดวิดีโอ ${Math.round((done / n) * 100)}% ...`);
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      if (bad) { note(""); return onFail("ดึงไฟล์วิดีโอจากเซิร์ฟเวอร์ไม่สำเร็จ", true); }
+      note("");
+      el.addEventListener("error", () => onFail("เบราว์เซอร์ถอดรหัสไฟล์นี้ไม่ได้ (โค้ดเดกไม่รองรับ)", false), { once: true });
+      el.src = URL.createObjectURL(new Blob(parts, { type: v.type })); el.load();
+    };
+    el.addEventListener("error", () => { if (!fell) fallback(); }, { once: true });
+    timer = setTimeout(() => { if (el.readyState === 0 && !fell) fallback(); }, 12000);
+    el.addEventListener("loadedmetadata", () => clearTimeout(timer), { once: true });
+    el.src = url + "#t=0.1";
+  }
+
   function player(v) {
-    const box = h("div", "ev-vid"), el = document.createElement("video");
+    const box = h("div", "ev-vid"), el = document.createElement("video"), note = h("div", "ev-vid-note");
     el.controls = true; el.preload = "metadata"; el.playsInline = true; el.setAttribute("controlsList", "nodownload"); el.disablePictureInPicture = true;
-    el.src = "/api/video/" + v.id + "#t=0.1";
-    el.addEventListener("error", () => { if (box.querySelector(".ev-vid-err")) return; const e = h("div", "ev-vid-err", "เล่นวิดีโอนี้ไม่ได้ในเบราว์เซอร์ของคุณ ลองรีเฟรชหน้าหรือเปิดด้วยเบราว์เซอร์อื่น"); box.appendChild(e); });
     el.addEventListener("pause", () => { if (pending) setTimeout(() => { if (pending && !playing()) { pending = false; render(); } }, 300); });
-    box.appendChild(el); return box;
+    box.append(el, note);
+    attachVideo(el, v, (msg) => { box.appendChild(h("div", "ev-vid-err", msg + " — ลองรีเฟรชหน้าหรือเปิดด้วยเบราว์เซอร์อื่น")); }, (t) => { note.textContent = t; note.hidden = !t; });
+    return box;
   }
   const playing = () => [...document.querySelectorAll("#evRoot video")].some((v) => !v.paused && !v.ended);
   let pending = false, sig = "";
@@ -43,7 +75,7 @@
         if (r.desc) c.appendChild(h("p", "", r.desc));
         const cd = h("div", "cd"); cd.dataset.t = r.openAt;
         ["d:วัน", "h:ชม.", "m:นาที", "s:วิ"].forEach((x) => { const [k, l] = x.split(":"); const s = h("div"); const b2 = h("b", "", "00"); b2.dataset.u = k; s.appendChild(b2); s.appendChild(h("span", "", l)); cd.appendChild(s); });
-        c.appendChild(cd); b.appendChild(c);
+        c.appendChild(cd); b.appendChild(c); window.trkCd.bind(cd, () => +cd.dataset.t - (Date.now() + skew), "r" + r.id);
       });
       root.appendChild(d);
     }
@@ -84,11 +116,7 @@
 
   function tick() {
     const now = Date.now() + skew; let ended = false;
-    document.querySelectorAll("#evRoot .cd").forEach((cd) => {
-      let s = Math.max(0, Math.floor((+cd.dataset.t - now) / 1000)); if (s === 0) ended = true;
-      const v = { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
-      cd.querySelectorAll("b").forEach((b) => { b.textContent = String(v[b.dataset.u]).padStart(2, "0"); });
-    });
+    document.querySelectorAll("#evRoot .cd").forEach((cd) => { if (+cd.dataset.t - now <= 0) ended = true; });
     if (data) data.polls.forEach((p) => { if ((p.status === "live" && now >= p.endsAt) || (p.status === "upcoming" && now >= p.startsAt)) ended = true; });
     if (ended && Date.now() - refetchAt > 3000) { refetchAt = Date.now(); load(); } // ถึงเวลาแล้ว ดึงข้อมูลใหม่ → ประกาศ "เปิดแล้ว" ขึ้นเอง
   }
@@ -156,12 +184,14 @@
         if (up && up.warn) box.appendChild(h("div", "vst warn", "⚠ " + up.warn));
         if (v) {
           box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
-          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onerror = async () => {
+          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true;
+          const pn = h("div", "vst"); pn.hidden = true;
+          attachVideo(pv, v, async (msg, net) => {
             let d = "";
-            try { const r = await fetch(pv.currentSrc || pv.src, { headers: { range: "bytes=0-1" }, credentials: "same-origin", cache: "no-store" }); d = `เซิร์ฟเวอร์ตอบ HTTP ${r.status} · ${r.headers.get("content-type") || "-"} · ${r.headers.get("content-range") || "-"}`; } catch (e) { d = "ติดต่อเซิร์ฟเวอร์ไม่ได้: " + e.message; }
-            const code = pv.error ? pv.error.code : "?", why = { 1: "ถูกยกเลิก", 2: "เครือข่ายขัดข้อง", 3: "ถอดรหัสภาพไม่ได้ (ไฟล์เสีย)", 4: "ไฟล์/โค้ดเดกไม่รองรับ หรือเซิร์ฟเวอร์ไม่ส่งไฟล์" }[code] || "";
-            box.appendChild(h("div", "vst bad", `✖ พรีวิวเล่นไม่ได้ รหัส ${code} ${why} | ${d}`));
-          }; box.appendChild(pv);
+            try { const r = await fetch("/api/video/" + v.id + "?s=0&e=1", { credentials: "same-origin", cache: "no-store" }); d = `เซิร์ฟเวอร์ตอบ HTTP ${r.status} · ${r.headers.get("content-type") || "-"}`; } catch (e) { d = "ติดต่อเซิร์ฟเวอร์ไม่ได้: " + e.message; }
+            box.appendChild(h("div", "vst bad", `✖ พรีวิวเล่นไม่ได้: ${msg} | ${d}`));
+          }, (t) => { pn.textContent = t; pn.hidden = !t; });
+          box.appendChild(pn); box.appendChild(pv);
         }
         const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
         if (v) { const rm = h("button", "mini del", "✖ เอาวิดีโอออก"); rm.type = "button"; rm.onclick = () => { it[key] = null; it._up = null; refresh(); }; box.appendChild(rm); }
@@ -265,6 +295,6 @@
     m.appendChild(box); m.addEventListener("mousedown", (e) => { if (e.target === m) m.hidden = true; }); document.body.appendChild(m);
   }
 
-  const start = () => { build(); mountAdmin(); load(); timer = setInterval(tick, 1000); setInterval(load, 60000); };
+  const start = () => { build(); mountAdmin(); load(); timer = setInterval(tick, 1000); setInterval(load, 5000); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();

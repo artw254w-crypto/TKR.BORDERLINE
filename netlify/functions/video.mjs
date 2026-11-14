@@ -23,6 +23,16 @@ export default async (req) => {
     "cache-control": open && !admin ? "private, max-age=3600" : "private, no-store", // ไม่ใช้ public: กัน CDN แคชช่วง Range ผิดช่วง
     "content-disposition": "inline", vary: "Range, Cookie" };
   if (req.method === "HEAD") return new Response(null, { status: 200, headers: { ...base, "content-length": String(size) } });
+  // ทางสำรอง: /api/video/<id>?s=<เริ่ม>&e=<จบ> ตอบ 200 ปกติ (ไม่ใช้ Range/206) ชิ้นละไม่เกิน 1 ก้อนที่เก็บ
+  const qs = new URL(req.url).searchParams;
+  if (qs.has("s") && qs.has("e")) {
+    const a = Number(qs.get("s")), z = Number(qs.get("e")), k = Math.floor(a / CHUNK);
+    if (!Number.isSafeInteger(a) || !Number.isSafeInteger(z) || a < 0 || z < a || z >= size || Math.floor(z / CHUNK) !== k) return new Response("bad range", { status: 400 });
+    const c = await readChunk(id, k);
+    if (!c) return nf();
+    const part = c.subarray(a - k * CHUNK, z - k * CHUNK + 1);
+    return new Response(part, { status: 200, headers: { ...base, "content-length": String(part.length) } });
+  }
   let start = 0, end = size - 1;
   const rg = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.get("range") || "").trim());
   if (rg && (rg[1] || rg[2])) {

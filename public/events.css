@@ -86,3 +86,10 @@
 .reopen{display:grid;gap:6px;margin-top:10px}.reopen[hidden]{display:none}
 .cd[hidden]{display:none}
 .vidw .vst.warn{color:#ffd166}
+.ev-vid{position:relative}.ev-vid-note{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:#cfe3ff;font-size:13px;pointer-events:none;text-shadow:0 0 6px #000}.ev-vid-note[hidden]{display:none}.ev-vid-err{position:absolute;inset:auto 0 0 0}
+/* เลขนับถอยหลังแบบวิ่ง */
+.cd b{font-variant-numeric:tabular-nums;transition:color .2s}
+.cd b.spin{filter:blur(.35px);text-shadow:0 0 16px currentColor;opacity:.92}
+.cd b.lock{animation:cdlock .42s ease-out}
+@keyframes cdlock{0%{transform:scale(1.35);filter:brightness(2.2);text-shadow:0 0 22px #5cbb38}100%{transform:scale(1);filter:none}}
+@media(prefers-reduced-motion:reduce){.cd b.lock{animation:none}}
