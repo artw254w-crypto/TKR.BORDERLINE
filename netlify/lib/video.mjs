@@ -5,7 +5,9 @@ import { getStore } from "@netlify/blobs";
 
 const store = () => getStore({ name: "trk-site", consistency: "strong" });
 export const CHUNK = 4 * 1024 * 1024;
-export const VIDEO_MAX = 200 * 1024 * 1024;
+// เพดานขนาดวิดีโอ: ค่าเริ่มต้นไม่จำกัด (ติดแค่โควตาพื้นที่ของ Netlify) ถ้าอยากจำกัดตั้ง VIDEO_MAX_MB ใน Environment variables
+const MB = Number(process.env.VIDEO_MAX_MB);
+export const VIDEO_MAX = Number.isFinite(MB) && MB > 0 ? MB * 1024 * 1024 : Infinity;
 export const VID_RE = /^[a-f0-9]{16}$/;
 export const newVid = () => crypto.randomBytes(8).toString("hex");
 const metaKey = (id) => "vidmeta/" + id;
@@ -30,6 +32,7 @@ export async function initUpload(name, size) {
   size = Number(size);
   if (!Number.isSafeInteger(size) || size < 1024) return { error: "ไฟล์วิดีโอเล็กเกินไปหรือไม่ถูกต้อง", status: 400 };
   if (size > VIDEO_MAX) return { error: `ไฟล์ใหญ่เกิน ${VIDEO_MAX / 1048576} MB`, status: 413 };
+  if (size > 5 * 1024 ** 3 * 1024) return { error: "ไฟล์ใหญ่เกินไป", status: 413 };
   const id = newVid();
   const meta = { id, name: cleanName(name) || "video", size, chunks: Math.ceil(size / CHUNK), type: "", done: [], sealed: false, createdAt: Date.now() };
   await store().setJSON(metaKey(id), meta);

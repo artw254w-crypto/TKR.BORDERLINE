@@ -8,7 +8,7 @@ import { CHUNK, initUpload, putChunk, finishUpload } from "../lib/video.mjs";
 export default async (req, ctx) => {
   if (!isAdmin(req)) return json({ error: "unauthorized" }, 401);
   if (!sameOrigin(req)) return json({ error: "forbidden" }, 403);
-  if (!(await rateLimit("vid:" + clientIp(req, ctx), 600, 10 * 60 * 1000))) return json({ error: "อัปโหลดถี่เกินไป ลองใหม่ภายหลัง" }, 429);
+  if (!(await rateLimit("vid:" + clientIp(req, ctx), 5000, 10 * 60 * 1000))) return json({ error: "อัปโหลดถี่เกินไป ลองใหม่ภายหลัง" }, 429);
   if (req.method === "PUT") {
     const u = new URL(req.url);
     const id = u.searchParams.get("vid") || "", n = Number(u.searchParams.get("n"));

@@ -113,7 +113,6 @@
   async function uploadVideo(it, key, file, refresh) {
     if (!file) return;
     if (!/^video\/(mp4|webm|quicktime)$/.test(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) { it._up = { err: "รองรับเฉพาะไฟล์ MP4 / WebM" }; refresh(); return; }
-    if (file.size > 200 * 1048576) { it._up = { err: "ไฟล์ใหญ่เกิน 200 MB" }; refresh(); return; }
     uploading++; it._up = { pct: 0, name: file.name }; refresh();
     try {
       const i = await J("/api/admin-video", "POST", { action: "init", name: file.name, size: file.size });
@@ -139,7 +138,7 @@
     const box = h("div", "vidw"); w.appendChild(box);
     const file = document.createElement("input"); file.type = "file"; file.accept = "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"; file.hidden = true;
     const refresh = () => {
-      box.textContent = ""; box.appendChild(h("small", "", "🎬 วิดีโอแนบ (ไม่ใช่ลิงก์ YouTube) จะขึ้นเล่นในหน้าประกาศเมื่อถึงเวลาประกาศเท่านั้น · MP4/WebM ไม่เกิน 200 MB"));
+      box.textContent = ""; box.appendChild(h("small", "", "🎬 วิดีโอแนบ (ไม่ใช่ลิงก์ YouTube) จะขึ้นเล่นในหน้าประกาศเมื่อถึงเวลาประกาศเท่านั้น · MP4/WebM ไม่จำกัดขนาด (ไฟล์ใหญ่ใช้เวลาอัปโหลดนาน อย่าปิดหน้านี้)"));
       const v = it[key], up = it._up;
       if (up && up.pct != null) { box.appendChild(h("div", "vst", `กำลังอัปโหลด ${up.name} ... ${up.pct}%`)); const bar = h("div", "ev-bar"), i = h("i"); i.style.width = up.pct + "%"; bar.appendChild(i); box.appendChild(bar); }
       else {
