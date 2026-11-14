@@ -141,7 +141,7 @@
       }
       const f = await J("/api/admin-video", "POST", { action: "finish", vid: id });
       if (!f.ok) throw new Error((f.data && f.data.error) || "ปิดงานอัปโหลดไม่สำเร็จ");
-      it[key] = f.data.video; it._up = playable ? null : { warn: "อัปโหลดสำเร็จ แต่เบราว์เซอร์นี้เปิดไฟล์นี้ไม่ได้ (โค้ดเดกอาจเป็น HEVC/H.265) ผู้ชมบางคนอาจเล่นไม่ได้ ถ้าพรีวิวไม่ขึ้นภาพแนะนำแปลงเป็น H.264 + AAC" };
+      it[key] = f.data.video; it._up = playable ? null : { warn: "อัปโหลดสำเร็จ แต่เบราว์เซอร์นี้เปิดไฟล์นี้ไม่ได้ (โค้ดเดกอาจเป็น HEVC/H.265) ถ้าพรีวิวด้านล่างไม่ขึ้นภาพ ให้แปลงไฟล์ด้วย tools/convert-to-web-mp4.bat (ลากไฟล์ไปวางบนไฟล์นี้) แล้วอัปโหลดใหม่" };
     } catch (e) { it._up = { err: String(e.message || e) }; }
     uploading--; refresh();
   }
@@ -157,7 +157,7 @@
         if (up && up.warn) box.appendChild(h("div", "vst warn", "⚠ " + up.warn));
         if (v) {
           box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
-          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onerror = () => box.appendChild(h("div", "vst bad", "✖ พรีวิวเล่นไม่ได้ (รหัส " + (pv.error ? pv.error.code : "?") + ") ลองอัปโหลดใหม่")); box.appendChild(pv);
+          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onloadeddata = () => { if (it._up && it._up.warn) { it._up = null; box.querySelectorAll(".vst.warn").forEach((e) => e.remove()); } }; pv.onerror = () => box.appendChild(h("div", "vst bad", "✖ พรีวิวเล่นไม่ได้ (รหัส " + (pv.error ? pv.error.code : "?") + ") ลองอัปโหลดใหม่")); box.appendChild(pv);
         }
         const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
         if (v) { const rm = h("button", "mini del", "✖ เอาวิดีโอออก"); rm.type = "button"; rm.onclick = () => { it[key] = null; it._up = null; refresh(); }; box.appendChild(rm); }
