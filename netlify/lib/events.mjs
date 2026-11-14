@@ -1,11 +1,13 @@
 // ระบบ ตั้งเวลาเปิดเนื้อหา / ประกาศ / โหวต  (เก็บใน Netlify Blobs เดียวกับ config)
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
+import { VID_RE } from "./video.mjs";
 
 const store = () => getStore({ name: "trk-site", consistency: "strong" });
 const clean = (v, n) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").slice(0, n).trim();
 const ts = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 && n < 4102444800000 ? Math.floor(n) : 0; };
 const rid = () => crypto.randomBytes(6).toString("hex");
+const vref = (v) => (v && VID_RE.test(String(v.id)) ? { id: String(v.id) } : null);
 const keepId = (v) => (/^[a-f0-9]{12}$/.test(String(v)) ? String(v) : rid());
 
 export const EMPTY = { releases: [], announcements: [], polls: [] };
@@ -21,11 +23,11 @@ export function validateEvents(input, current) {
   const arr = (a, max) => (Array.isArray(a) ? a.slice(0, max) : []);
   const releases = arr(input.releases, 20).map((r) => ({
     id: keepId(r?.id), title: clean(r?.title, 80), desc: clean(r?.desc, 300), openAt: ts(r?.openAt),
-    announceTitle: clean(r?.announceTitle, 80), announceBody: clean(r?.announceBody, 400),
+    announceTitle: clean(r?.announceTitle, 80), announceBody: clean(r?.announceBody, 400), announceVideo: vref(r?.announceVideo),
   }));
   if (releases.some((r) => !r.title || !r.openAt)) return { error: "ทุกรายการเปิดเนื้อหาต้องมีชื่อและเวลาเปิด" };
   const announcements = arr(input.announcements, 50).map((a) => ({
-    id: keepId(a?.id), title: clean(a?.title, 80), body: clean(a?.body, 600), at: ts(a?.at),
+    id: keepId(a?.id), title: clean(a?.title, 80), body: clean(a?.body, 600), at: ts(a?.at), video: vref(a?.video),
   }));
   if (announcements.some((a) => !a.title || !a.at)) return { error: "ทุกประกาศต้องมีหัวข้อและเวลา" };
   const old = new Map((current.polls || []).map((p) => [p.id, p]));
@@ -42,14 +44,15 @@ export function validateEvents(input, current) {
   return { value: { releases, announcements, polls } };
 }
 
+const pubVid = (v) => (v ? { video: { id: v.id, type: v.type, size: v.size } } : {});
 const pollStatus = (p, now) => (now < p.startsAt ? "upcoming" : now < p.endsAt ? "live" : "ended");
 
 export function publicEvents(e, now = Date.now()) {
-  const feed = (e.announcements || []).filter((a) => a.at <= now).map((a) => ({ id: a.id, title: a.title, body: a.body, at: a.at }));
+  const feed = (e.announcements || []).filter((a) => a.at <= now).map((a) => ({ id: a.id, title: a.title, body: a.body, at: a.at, ...pubVid(a.video) }));
   const releases = [];
   for (const r of e.releases || []) {
     if (r.openAt > now) releases.push({ id: r.id, title: r.title, desc: r.desc, openAt: r.openAt });
-    else feed.push({ id: "r" + r.id, title: r.announceTitle || `เปิดเนื้อหาแล้ว: ${r.title}`, body: r.announceBody || r.desc, at: r.openAt, auto: true });
+    else feed.push({ id: "r" + r.id, title: r.announceTitle || `เปิดเนื้อหาแล้ว: ${r.title}`, body: r.announceBody || r.desc, at: r.openAt, auto: true, ...pubVid(r.announceVideo) });
   }
   const polls = (e.polls || []).filter((p) => p.startsAt <= now + 7 * 864e5).map((p) => {
     const status = pollStatus(p, now), total = p.options.reduce((s, o) => s + o.votes, 0);

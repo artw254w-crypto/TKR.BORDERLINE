@@ -20,8 +20,19 @@
     const anchor = $("steps"); anchor.parentNode.insertBefore(root, anchor);
   }
 
+  function player(v) {
+    const box = h("div", "ev-vid"), el = document.createElement("video");
+    el.controls = true; el.preload = "metadata"; el.playsInline = true; el.setAttribute("controlsList", "nodownload"); el.disablePictureInPicture = true;
+    el.src = "/api/video/" + v.id + "#t=0.1";
+    el.addEventListener("pause", () => { if (pending) setTimeout(() => { if (pending && !playing()) { pending = false; render(); } }, 300); });
+    box.appendChild(el); return box;
+  }
+  const playing = () => [...document.querySelectorAll("#evRoot video")].some((v) => !v.paused && !v.ended);
+  let pending = false, sig = "";
+
   function render() {
     const root = $("evRoot"); if (!root || !data) return;
+    if (playing()) { pending = true; return; } // กำลังดูวิดีโออยู่ ไม่รีเฟรชทับ รอจนหยุดค่อยอัปเดต
     const keep = new Set([...root.querySelectorAll("details")].filter((d) => !d.open).map((d) => d.dataset.k));
     root.textContent = "";
     if (data.releases.length) {
@@ -37,7 +48,7 @@
     }
     if (data.announcements.length) {
       const [d, b] = panel("Announcements · ประกาศ"); d.dataset.k = "ann";
-      data.announcements.forEach((a) => { const c = h("div", "ev-card" + (a.auto ? " auto" : "")); c.appendChild(h("small", "", fmt(a.at))); c.appendChild(h("h4", "", a.title)); if (a.body) c.appendChild(h("p", "", a.body)); b.appendChild(c); });
+      data.announcements.forEach((a) => { const c = h("div", "ev-card" + (a.auto ? " auto" : "")); c.appendChild(h("small", "", fmt(a.at))); c.appendChild(h("h4", "", a.title)); if (a.body) c.appendChild(h("p", "", a.body)); if (a.video) c.appendChild(player(a.video)); b.appendChild(c); });
       root.appendChild(d);
     }
     data.polls.forEach((p) => {
@@ -56,7 +67,7 @@
           btn.addEventListener("click", async () => {
             btn.disabled = true; msg.textContent = "กำลังส่ง...";
             const r = await J("/api/vote", "POST", { pollId: p.id, optionId: o.id });
-            if (r.ok) { setVoted(p.id, o.id); data = r.data; skew = data.now - Date.now(); render(); }
+            if (r.ok) { setVoted(p.id, o.id); data = r.data; skew = data.now - Date.now(); sig = ""; render(); }
             else { if (r.status === 409) setVoted(p.id, o.id); msg.textContent = (r.data && r.data.error) || "โหวตไม่สำเร็จ"; if (r.status === 409) load(); }
           });
           box.appendChild(btn);
@@ -83,7 +94,10 @@
 
   async function load() {
     const r = await J("/api/events"); if (!r.ok || !r.data) return;
-    data = r.data; skew = data.now - Date.now(); build(); render();
+    skew = r.data.now - Date.now();
+    const sg = JSON.stringify([r.data.releases, r.data.announcements, r.data.polls]);
+    data = r.data; build();
+    if (sg !== sig) { sig = sg; render(); }
   }
 
   // ---------- แผงแอดมิน ----------
@@ -93,6 +107,55 @@
 
   function field(parent, label, el) { const l = h("label", "", label); l.appendChild(el); parent.appendChild(l); return el; }
   function inp(val, type = "text", max = 80) { const i = document.createElement(type === "area" ? "textarea" : "input"); if (type !== "area") i.type = type; if (type === "area") i.rows = 2; i.maxLength = max; i.value = val || ""; return i; }
+
+  const fmtMB = (n) => (n / 1048576).toFixed(1) + " MB";
+  let uploading = 0;
+  async function uploadVideo(it, key, file, refresh) {
+    if (!file) return;
+    if (!/^video\/(mp4|webm|quicktime)$/.test(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) { it._up = { err: "รองรับเฉพาะไฟล์ MP4 / WebM" }; refresh(); return; }
+    if (file.size > 200 * 1048576) { it._up = { err: "ไฟล์ใหญ่เกิน 200 MB" }; refresh(); return; }
+    uploading++; it._up = { pct: 0, name: file.name }; refresh();
+    try {
+      const i = await J("/api/admin-video", "POST", { action: "init", name: file.name, size: file.size });
+      if (!i.ok) throw new Error((i.data && i.data.error) || "เริ่มอัปโหลดไม่สำเร็จ");
+      const { id, chunk, chunks } = i.data;
+      for (let n = 0; n < chunks; n++) {
+        const part = file.slice(n * chunk, Math.min(file.size, (n + 1) * chunk));
+        let ok = false, last = "";
+        for (let t = 0; t < 3 && !ok; t++) {
+          const r = await fetch("/api/admin-video?vid=" + id + "&n=" + n, { method: "PUT", body: part, credentials: "same-origin", headers: { "content-type": "application/octet-stream" } });
+          if (r.ok) ok = true; else { try { last = (await r.json()).error; } catch {} if (r.status < 500 && r.status !== 429) break; }
+        }
+        if (!ok) throw new Error(last || "อัปโหลดก้อนที่ " + (n + 1) + " ไม่สำเร็จ");
+        it._up.pct = Math.round(((n + 1) / chunks) * 100); refresh();
+      }
+      const f = await J("/api/admin-video", "POST", { action: "finish", vid: id });
+      if (!f.ok) throw new Error((f.data && f.data.error) || "ปิดงานอัปโหลดไม่สำเร็จ");
+      it[key] = f.data.video; it._up = null;
+    } catch (e) { it._up = { err: String(e.message || e) }; }
+    uploading--; refresh();
+  }
+  function vidWidget(w, it, key) {
+    const box = h("div", "vidw"); w.appendChild(box);
+    const file = document.createElement("input"); file.type = "file"; file.accept = "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"; file.hidden = true;
+    const refresh = () => {
+      box.textContent = ""; box.appendChild(h("small", "", "🎬 วิดีโอแนบ (ไม่ใช่ลิงก์ YouTube) จะขึ้นเล่นในหน้าประกาศเมื่อถึงเวลาประกาศเท่านั้น · MP4/WebM ไม่เกิน 200 MB"));
+      const v = it[key], up = it._up;
+      if (up && up.pct != null) { box.appendChild(h("div", "vst", `กำลังอัปโหลด ${up.name} ... ${up.pct}%`)); const bar = h("div", "ev-bar"), i = h("i"); i.style.width = up.pct + "%"; bar.appendChild(i); box.appendChild(bar); }
+      else {
+        if (up && up.err) box.appendChild(h("div", "vst bad", "✖ " + up.err));
+        if (v) {
+          box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
+          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; box.appendChild(pv);
+        }
+        const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
+        if (v) { const rm = h("button", "mini del", "✖ เอาวิดีโอออก"); rm.type = "button"; rm.onclick = () => { it[key] = null; it._up = null; refresh(); }; box.appendChild(rm); }
+      }
+      box.appendChild(file);
+    };
+    file.addEventListener("change", () => { const f = file.files && file.files[0]; file.value = ""; uploadVideo(it, key, f, refresh); });
+    refresh();
+  }
 
   function drawAdmin() {
     const body = $("evaBody"); body.textContent = "";
@@ -104,9 +167,11 @@
     sect("◈ ตั้งเวลาเปิดเนื้อหา (มีนับถอยหลัง + ประกาศอัตโนมัติเมื่อถึงเวลา)", "releases", "เพิ่มเนื้อหา", () => ({ title: "", desc: "", openAt: Date.now() + 864e5, announceTitle: "", announceBody: "" }), (w, it) => {
       it._f = { title: field(w, "ชื่อเนื้อหา", inp(it.title)), openAt: field(w, "เวลาเปิด", inp(toLocal(it.openAt), "datetime-local")), desc: field(w, "คำอธิบาย", inp(it.desc, "area", 300)),
         announceTitle: field(w, "หัวข้อประกาศตอนเปิด (ว่าง = ใช้ค่าอัตโนมัติ)", inp(it.announceTitle)), announceBody: field(w, "ข้อความประกาศตอนเปิด", inp(it.announceBody, "area", 400)) };
+      vidWidget(w, it, "announceVideo");
     });
     sect("◈ ประกาศ (ตั้งเวลาล่วงหน้าได้ จะขึ้นเองเมื่อถึงเวลา)", "announcements", "เพิ่มประกาศ", () => ({ title: "", body: "", at: Date.now() }), (w, it) => {
       it._f = { title: field(w, "หัวข้อ", inp(it.title)), at: field(w, "เวลาที่แสดง", inp(toLocal(it.at), "datetime-local")), body: field(w, "เนื้อหา", inp(it.body, "area", 600)) };
+      vidWidget(w, it, "video");
     });
     sect("◈ โพลโหวต (ผู้ชนะประกาศอัตโนมัติเมื่อจบ)", "polls", "เพิ่มโพล", () => ({ question: "", options: [{ label: "" }, { label: "" }], startsAt: Date.now(), endsAt: Date.now() + 3 * 864e5, winnerNote: "" }), (w, it) => {
       it._f = { question: field(w, "คำถาม", inp(it.question, "text", 120)) };
@@ -128,7 +193,7 @@
       }
     });
   }
-  const strip = (o) => JSON.parse(JSON.stringify(o, (k, v) => (k === "_f" ? undefined : v)));
+  const strip = (o) => JSON.parse(JSON.stringify(o, (k, v) => (k[0] === "_" ? undefined : v)));
 
   async function openAdmin() {
     const r = await J("/api/admin-events");
@@ -138,6 +203,7 @@
   }
   async function saveAdmin() {
     collect(); $("evaErr").hidden = true; $("evaOk").hidden = true;
+    if (uploading) { $("evaErr").textContent = "กำลังอัปโหลดวิดีโออยู่ รอให้เสร็จก่อนค่อยบันทึก"; $("evaErr").hidden = false; return; }
     const r = await J("/api/admin-events", "PUT", strip(st));
     if (!r.ok) { $("evaErr").textContent = (r.data && r.data.error) || "บันทึกไม่สำเร็จ"; $("evaErr").hidden = false; return; }
     st = r.data; drawAdmin(); $("evaOk").hidden = false; load();

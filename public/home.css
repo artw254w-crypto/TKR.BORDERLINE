@@ -101,3 +101,7 @@ h1#title{font:900 clamp(28px,3.5vw,42px)/1.15 "Orbitron","Prompt",sans-serif;let
 
 .swE{background:linear-gradient(90deg,#00050d 0 40%,#00e5ff 40% 70%,#ff2bd6 70%)}
 .cy-sys{display:none}
+
+.swF{background:linear-gradient(90deg,#00050d 0 35%,#0064ec 35% 65%,#5cbb38 65%)}
+.hp-panel{display:contents}
+.hp-ph,.hp-rule{display:none}

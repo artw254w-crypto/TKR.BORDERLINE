@@ -7,8 +7,8 @@ export const DEFAULTS = {
   title: "T.R.K : BORDER LINE",
   subtitle: "เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์",
   story: "ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม",
-  theme: "E", // ธีมหน้าเว็บ A/B/C/D/E (แอดมินเปลี่ยนได้) E = ไซเบอร์ (ค่าเริ่มต้นใหม่)
-  themeV: 2,  // เวอร์ชันของค่าธีม: ค่าเก่าที่ยังไม่มีเลขนี้จะถูกย้ายมาเป็นธีม E หนึ่งครั้ง
+  theme: "F", // ธีมหน้าเว็บ A/B/C/D/E (แอดมินเปลี่ยนได้) E = ไซเบอร์ (ค่าเริ่มต้นใหม่)
+  themeV: 3,  // เวอร์ชันของค่าธีม: ค่าเก่าที่ยังไม่มีเลขนี้จะถูกย้ายมาเป็นธีม E หนึ่งครั้ง
   fileUrl: "https://drive.google.com/",
   fileSize: "15.1 GB",
   fileMd5: "", // MD5 ของไฟล์เกม (ไม่บังคับ) ใช้กับโหมด R2 เมื่อไฟล์ใน R2 ไม่ได้ฝัง MD5 ไว้ (ดูได้จากผลสแกน)
@@ -163,7 +163,7 @@ export async function getConfig() {
   let saved = null;
   try { saved = await store().get("config", { type: "json" }); } catch {}
   const cfg = { ...DEFAULTS, ...(saved || {}) };
-  if (saved && saved.themeV !== 2) cfg.theme = "E"; // ย้ายผู้ใช้เดิมมาธีมใหม่ครั้งเดียว (แอดมินเปลี่ยนกลับได้ แล้วบันทึกจะจำค่านั้น)
+  if (saved && saved.themeV !== 3) cfg.theme = "F"; // ย้ายผู้ใช้เดิมมาธีมใหม่ครั้งเดียว (แอดมินเปลี่ยนกลับได้ แล้วบันทึกจะจำค่านั้น)
   cfg.img = { ...DEFAULTS.img, ...(saved?.img || {}) };
   cfg.specs = {
     min: { ...DEFAULTS.specs.min, ...(saved?.specs?.min || {}) },
@@ -212,7 +212,7 @@ export function validateConfig(input, current) {
   out.maintenanceMsg = clean(input.maintenanceMsg, 200);
   out.subtitle = clean(input.subtitle, 400) || current.subtitle; // คำอธิบายเกม (ห้ามว่าง)
   out.story = clean(input.story, 400);
-  out.theme = ["A", "B", "C", "D", "E"].includes(input.theme) ? input.theme : (current.theme || "E");                           // เนื้อเรื่อง (เว้นว่าง = ซ่อน)
+  out.theme = ["A", "B", "C", "D", "E", "F"].includes(input.theme) ? input.theme : (current.theme || "F");                           // เนื้อเรื่อง (เว้นว่าง = ซ่อน)
   if (!out.title || !out.fileSize || !out.version) return { error: "กรอกชื่อเกม ขนาดไฟล์ และเวอร์ชั่นให้ครบ" };
   if (input.status !== "ONLINE" && input.status !== "OFFLINE") return { error: "สถานะไม่ถูกต้อง" };
   out.status = input.status;
@@ -234,7 +234,7 @@ export function validateConfig(input, current) {
 }
 
 export const publicConfig = (c) => ({
-  title: c.title, subtitle: c.subtitle, story: c.story, theme: c.theme || "E", fileSize: c.fileSize, version: c.version,
+  title: c.title, subtitle: c.subtitle, story: c.story, theme: c.theme || "F", fileSize: c.fileSize, version: c.version,
   os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
   specs: c.specs,
   gear: !c.adminClaimed, // ยังไม่มีแอดมินล็อกอิน = ทุกคนเห็นเฟือง

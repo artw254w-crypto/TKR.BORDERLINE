@@ -365,7 +365,7 @@
       ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
       : "โหมดส่งไฟล์: Google Drive — เว็บรู้เองไม่ได้ว่าผู้ใช้โหลดจบหรือไม่ ถ้าต้องการรู้ ให้ตั้งค่า Cloudflare R2 ตามไฟล์ README-R2.txt";
     document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
-    { const tr = document.querySelector(`input[name="theme"][value="${c.theme || "E"}"]`); if (tr) tr.checked = true; }
+    { const tr = document.querySelector(`input[name="theme"][value="${c.theme || "F"}"]`); if (tr) tr.checked = true; }
     hide("saveErr"); hide("saveOk");
   }
 
@@ -896,9 +896,9 @@
 
   addEventListener("hashchange", handleAdminHash);
   // ธีม E: กดหัวข้อส่วนล่าง (ติดตั้ง/สเปค) เพื่อพับ-ขยาย (ธีมอื่นไม่มีผล)
-  document.querySelectorAll(".hp-sec h2").forEach((h) => {
+  document.querySelectorAll(".hp-sec h2, .hp-ph").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const tog = () => { if (document.documentElement.dataset.theme !== "E") return; const s = h.closest(".hp-sec"); s.classList.toggle("collapsed"); h.setAttribute("aria-expanded", String(!s.classList.contains("collapsed"))); };
+    const tog = () => { const t = document.documentElement.dataset.theme; if (t !== "E" && t !== "F") return; const s = h.closest(".hp-sec, .hp-panel"); s.classList.toggle("collapsed"); h.setAttribute("aria-expanded", String(!s.classList.contains("collapsed"))); };
     h.addEventListener("click", tog);
     h.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } });
   });
