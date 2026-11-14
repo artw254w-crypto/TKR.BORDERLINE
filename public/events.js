@@ -12,6 +12,7 @@
   const voted = () => { try { return JSON.parse(localStorage.getItem("trkVoted") || "{}"); } catch { return {}; } };
   const setVoted = (id, o) => { try { const v = voted(); v[id] = o; localStorage.setItem("trkVoted", JSON.stringify(v)); } catch {} };
 
+  const fmtMB = (n) => (n / 1048576).toFixed(1) + " MB";
   const panel = (title, open = true) => { const d = h("details", "ev-p"); d.open = open; d.appendChild(h("summary", "", title)); const b = h("div", "ev-b"); d.appendChild(b); return [d, b]; };
 
   function build() {
@@ -50,6 +51,39 @@
     timer = setTimeout(() => { if (el.readyState === 0 && !fell) fallback(); }, 12000);
     el.addEventListener("loadedmetadata", () => clearTimeout(timer), { once: true });
     el.src = url + "#t=0.1";
+  }
+
+  // ดาวน์โหลดคลิป LEEKS: ดึงทีละชิ้น 1 MB (ฟังก์ชัน Netlify ส่งไฟล์ใหญ่ทีเดียวไม่ได้) ประกอบเป็นไฟล์แล้วสั่งบันทึก
+  const safeName = (t, v) => { const ext = v.type === "video/webm" ? "webm" : "mp4"; const base = String(t || "video").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim().slice(0, 80) || "video"; return base + "." + ext; };
+  function leekButton(l) {
+    const v = l.video, btn = h("button", "leek-dl", "▸ ดาวน์โหลดคลิป · " + fmtMB(v.size)); btn.type = "button";
+    let busy = false;
+    btn.addEventListener("click", async () => {
+      if (busy) return; busy = true; btn.disabled = true;
+      const SL = 1048576, n = Math.max(1, Math.ceil(v.size / SL)), parts = new Array(n); let done = 0, bad = false, next = 0;
+      const worker = async () => {
+        while (!bad) {
+          const i = next++; if (i >= n) return;
+          const a = i * SL, z = Math.min(v.size, (i + 1) * SL) - 1; let ok = false;
+          for (let t = 0; t < 4 && !ok; t++) {
+            try { const r = await fetch(`/api/video/${v.id}?s=${a}&e=${z}`, { credentials: "same-origin" }); if (r.ok) { const b = await r.arrayBuffer(); if (b.byteLength === z - a + 1) { parts[i] = b; ok = true; } } } catch {}
+            if (!ok) await new Promise((r) => setTimeout(r, 400 * (t + 1)));
+          }
+          if (!ok) { bad = true; return; }
+          done++; btn.textContent = `▸ กำลังโหลด ${Math.round((done / n) * 100)}% ...`;
+        }
+      };
+      btn.textContent = "▸ กำลังโหลด 0% ...";
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      if (bad) { btn.textContent = "✖ โหลดไม่สำเร็จ ลองใหม่"; }
+      else {
+        const u = URL.createObjectURL(new Blob(parts, { type: v.type })), a = document.createElement("a");
+        a.href = u; a.download = safeName(l.title, v); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000);
+        btn.textContent = "✓ โหลดเสร็จแล้ว (กดอีกครั้งเพื่อโหลดซ้ำ)";
+      }
+      busy = false; btn.disabled = false;
+    });
+    return btn;
   }
 
   function player(v) {
@@ -109,6 +143,11 @@
       });
       b.appendChild(msg); root.appendChild(d);
     });
+    if ((data.leeks || []).length) {
+      const [d, b] = panel("LEEKS"); d.dataset.k = "leek"; d.classList.add("leek");
+      data.leeks.forEach((l) => { const c = h("div", "ev-card leek-card"); c.appendChild(h("h4", "", l.title)); const row = h("div", "leek-row"); row.appendChild(leekButton(l)); c.appendChild(row); b.appendChild(c); });
+      root.insertBefore(d, root.firstChild);
+    }
     root.querySelectorAll("details").forEach((d) => { if (keep.has(d.dataset.k)) d.open = false; });
     root.hidden = !root.firstChild;
     tick();
@@ -124,7 +163,7 @@
   async function load() {
     const r = await J("/api/events"); if (!r.ok || !r.data) return;
     skew = r.data.now - Date.now();
-    const sg = JSON.stringify([r.data.releases, r.data.announcements, r.data.polls]);
+    const sg = JSON.stringify([r.data.releases, r.data.announcements, r.data.polls, r.data.leeks]);
     data = r.data; build();
     if (sg !== sig) { sig = sg; render(); }
   }
@@ -138,7 +177,6 @@
   function field(parent, label, el) { const l = h("label", "", label); l.appendChild(el); parent.appendChild(l); return el; }
   function inp(val, type = "text", max = 80) { const i = document.createElement(type === "area" ? "textarea" : "input"); if (type !== "area") i.type = type; if (type === "area") i.rows = 2; i.maxLength = max; i.value = val || ""; return i; }
 
-  const fmtMB = (n) => (n / 1048576).toFixed(1) + " MB";
   let uploading = 0;
   // ลองเปิดไฟล์ในเบราว์เซอร์ก่อนอัปโหลด: ถ้าเล่นไม่ได้ (เช่น HEVC/H.265, ไฟล์เสีย) ผู้ชมก็เล่นไม่ได้เหมือนกัน
   const canPlay = (file) => new Promise((res) => {
@@ -246,6 +284,10 @@
       vidWidget(w, it, "video");
       opensWidget(w, it, "at");
     });
+    sect("◈ LEEKS (หัวข้อ + คลิปวิดีโอ 1 ไฟล์ ผู้ชมกดปุ่มเดียวเพื่อดาวน์โหลด · แสดงทันทีหลังบันทึก)", "leeks", "เพิ่ม LEEK", () => ({ title: "", video: null }), (w, it) => {
+      it._f = { title: field(w, "หัวข้อ / ชื่อคลิป", inp(it.title, "text", 120)) };
+      vidWidget(w, it, "video");
+    });
     sect("◈ โพลโหวต (ผู้ชนะประกาศอัตโนมัติเมื่อจบ)", "polls", "เพิ่มโพล", () => ({ question: "", options: [{ label: "" }, { label: "" }], startsAt: Date.now(), endsAt: Date.now() + 3 * 864e5, winnerNote: "" }), (w, it) => {
       it._f = { question: field(w, "คำถาม", inp(it.question, "text", 120)) };
       const two = h("div", "two"); w.appendChild(two);
@@ -271,7 +313,7 @@
   async function openAdmin() {
     const r = await J("/api/admin-events");
     if (r.status === 401) { alert("ต้องล็อกอินแอดมินก่อน"); return; }
-    st = r.data || { releases: [], announcements: [], polls: [] };
+    st = r.data || { releases: [], announcements: [], polls: [] }; if (!st.leeks) st.leeks = [];
     $("evaErr").hidden = true; $("evaOk").hidden = true; drawAdmin(); $("evAdmin").hidden = false;
   }
   async function saveAdmin() {
@@ -279,7 +321,7 @@
     if (uploading) { $("evaErr").textContent = "กำลังอัปโหลดวิดีโออยู่ รอให้เสร็จก่อนค่อยบันทึก"; $("evaErr").hidden = false; return; }
     const r = await J("/api/admin-events", "PUT", strip(st));
     if (!r.ok) { $("evaErr").textContent = (r.data && r.data.error) || "บันทึกไม่สำเร็จ"; $("evaErr").hidden = false; return; }
-    st = r.data; drawAdmin(); $("evaOk").hidden = false; load();
+    st = r.data; if (!st.leeks) st.leeks = []; drawAdmin(); $("evaOk").hidden = false; load();
   }
 
   function mountAdmin() {

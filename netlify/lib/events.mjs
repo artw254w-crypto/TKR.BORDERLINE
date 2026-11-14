@@ -16,7 +16,7 @@ const cleanOpens = (o) => {
 };
 const keepId = (v) => (/^[a-f0-9]{12}$/.test(String(v)) ? String(v) : rid());
 
-export const EMPTY = { releases: [], announcements: [], polls: [] };
+export const EMPTY = { releases: [], announcements: [], polls: [], leeks: [] };
 
 export async function getEvents() {
   try { return (await store().get("events", { type: "json" })) || structuredClone(EMPTY); } catch { return structuredClone(EMPTY); }
@@ -37,6 +37,10 @@ export function validateEvents(input, current) {
   }));
   if (announcements.some((a) => !a.title || !a.at)) return { error: "ทุกประกาศต้องมีหัวข้อและเวลา" };
   if ([...releases, ...announcements].some((x) => x.opens.mode === "at" && !x.opens.at)) return { error: "เลือกวันเวลาที่จะเปิดไฟล์ดาวน์โหลดให้ครบ" };
+  // LEEKS: หัวข้อ + คลิปวิดีโอ 1 ไฟล์ (ปุ่มดาวน์โหลดปุ่มเดียว) แสดงทันทีไม่ผูกเวลา
+  const leeks = arr(input.leeks, 100).map((l) => ({ id: keepId(l?.id), title: clean(l?.title, 120), video: vref(l?.video) }));
+  if (leeks.some((l) => !l.title)) return { error: "ทุกรายการ LEEKS ต้องมีหัวข้อ" };
+  if (leeks.some((l) => !l.video)) return { error: "ทุกรายการ LEEKS ต้องแนบวิดีโอ 1 ไฟล์ (หรือลบรายการที่ไม่ใช้)" };
   const old = new Map((current.polls || []).map((p) => [p.id, p]));
   const polls = arr(input.polls, 10).map((p) => {
     const id = keepId(p?.id), prev = old.get(id);
@@ -48,7 +52,7 @@ export function validateEvents(input, current) {
     if (!p.question || p.options.length < 2 || p.options.some((o) => !o.label)) return { error: "โพลต้องมีคำถามและอย่างน้อย 2 ตัวเลือก" };
     if (!p.startsAt || !p.endsAt || p.endsAt <= p.startsAt) return { error: "เวลาจบโพลต้องหลังเวลาเริ่ม" };
   }
-  return { value: { releases, announcements, polls } };
+  return { value: { releases, announcements, polls, leeks } };
 }
 
 const pubVid = (v) => (v ? { video: { id: v.id, type: v.type, size: v.size } } : {});
@@ -69,9 +73,10 @@ export function publicEvents(e, now = Date.now()) {
     return { id: p.id, question: p.question, status, startsAt: p.startsAt, endsAt: p.endsAt, total, winners,
       options: p.options.map((o) => ({ id: o.id, label: o.label, votes: o.votes, pct: total ? Math.round((o.votes / total) * 1000) / 10 : 0 })) };
   });
+  const leeks = (e.leeks || []).filter((l) => l.video).map((l) => ({ id: l.id, title: l.title, video: { id: l.video.id, type: l.video.type, size: l.video.size, name: l.video.name } }));
   feed.sort((a, b) => b.at - a.at);
   releases.sort((a, b) => a.openAt - b.openAt);
-  return { now, releases, announcements: feed.slice(0, 30), polls };
+  return { now, releases, announcements: feed.slice(0, 30), polls, leeks };
 }
 
 // โหวต: 1 IP ต่อ 1 โพล (เก็บแค่แฮช ไม่เก็บ IP จริง) ไม่ atomic 100% แต่พอสำหรับโพลชุมชน

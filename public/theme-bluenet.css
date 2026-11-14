@@ -180,3 +180,12 @@ legend,.sec-t{color:#5cbb38;font-family:var(--f-mono);text-transform:uppercase;l
   .hp-lead{letter-spacing:.1em}
   .hp-nav a{padding:0 12px}
 }
+
+/* LEEKS: กรอบเขียวบนธีมไซเบอร์บลู */
+.ev-p.leek{border-color:#5cbb38}
+.ev-p.leek>summary{border:1px solid #5cbb38;margin:-1px -1px 0;box-shadow:0 0 14px #5cbb3866;color:#5cbb38}
+.ev-p.leek:not([open])>summary{margin-bottom:-1px}
+.leek-card{background:#000d24}
+.leek-card h4{font-size:19px;letter-spacing:.06em;margin:0}
+.leek-dl{padding:12px 18px;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;color:#0064ec;background:#000d24;border:1px solid #003299;border-radius:0;cursor:pointer}
+.leek-dl:hover:not(:disabled){background:#001664;border-color:#0064ec}

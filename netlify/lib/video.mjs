@@ -77,7 +77,7 @@ export async function deleteVideo(id) {
 
 // เติมข้อมูลวิดีโอจากเซิร์ฟเวอร์ (ไม่เชื่อค่าจากฟอร์ม) และตรวจว่าอัปโหลดเสร็จจริง
 export async function resolveVideos(value) {
-  const targets = [...value.announcements.map((a) => [a, "video"]), ...value.releases.map((r) => [r, "announceVideo"])];
+  const targets = [...value.announcements.map((a) => [a, "video"]), ...value.releases.map((r) => [r, "announceVideo"]), ...(value.leeks || []).map((l) => [l, "video"])];
   for (const [it, key] of targets) {
     const ref = it[key];
     if (!ref) { it[key] = null; continue; }
@@ -88,7 +88,7 @@ export async function resolveVideos(value) {
   return { value };
 }
 
-export const videoIds = (e) => new Set([...(e.announcements || []).map((a) => a.video?.id), ...(e.releases || []).map((r) => r.announceVideo?.id)].filter(Boolean));
+export const videoIds = (e) => new Set([...(e.announcements || []).map((a) => a.video?.id), ...(e.releases || []).map((r) => r.announceVideo?.id), ...(e.leeks || []).map((l) => l.video?.id)].filter(Boolean));
 
 // ลบวิดีโอที่ไม่มีรายการไหนใช้แล้ว (เว้น 1 ชม. กันแท็บอื่นกำลังแนบอยู่, อัปโหลดค้างให้เวลา 6 ชม.)
 export async function sweepVideos(referenced) {
