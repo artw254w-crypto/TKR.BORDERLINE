@@ -121,39 +121,40 @@
   });
   async function uploadVideo(it, key, file, refresh) {
     if (!file) return;
-    if (!/^video\/(mp4|webm|quicktime)$/.test(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) { it._up = { err: "รองรับเฉพาะไฟล์ MP4 / WebM" }; refresh(); return; }
+    if (!/^video\//.test(file.type) && !/\.(mp4|m4v|mov|webm|mkv|3gp)$/i.test(file.name)) { it._up = { err: "เลือกไฟล์วิดีโอ (MP4, MOV, WebM)" }; refresh(); return; }
     it._up = { pct: 0, name: file.name + " (ตรวจไฟล์...)" }; refresh();
-    if (!(await canPlay(file))) { it._up = { err: "เบราว์เซอร์เล่นไฟล์นี้ไม่ได้ (โค้ดเดกไม่รองรับ เช่น HEVC/H.265 จากมือถือ หรือไฟล์เสีย) แปลงเป็น MP4 แบบ H.264 + AAC ก่อนแล้วอัปโหลดใหม่" }; refresh(); return; }
+    const playable = await canPlay(file);
     uploading++; it._up = { pct: 0, name: file.name }; refresh();
     try {
       const i = await J("/api/admin-video", "POST", { action: "init", name: file.name, size: file.size });
-      if (!i.ok) throw new Error((i.data && i.data.error) || "เริ่มอัปโหลดไม่สำเร็จ");
+      if (!i.ok) throw new Error((i.data && i.data.error) || "เริ่มอัปโหลดไม่สำเร็จ (HTTP " + i.status + (i.status === 401 ? " — ล็อกอินแอดมินหมดอายุ" : i.status === 403 ? " — เปิดเว็บจากที่อยู่เดียวกับที่ล็อกอิน" : "") + ")");
       const { id, chunk, chunks } = i.data;
       for (let n = 0; n < chunks; n++) {
         const part = file.slice(n * chunk, Math.min(file.size, (n + 1) * chunk));
-        let ok = false, last = "";
+        let ok = false, last = "", code = 0;
         for (let t = 0; t < 3 && !ok; t++) {
           const r = await fetch("/api/admin-video?vid=" + id + "&n=" + n, { method: "PUT", body: part, credentials: "same-origin", headers: { "content-type": "application/octet-stream" } });
-          if (r.ok) ok = true; else { try { last = (await r.json()).error; } catch {} if (r.status < 500 && r.status !== 429) break; }
+          if (r.ok) ok = true; else { code = r.status; try { last = (await r.json()).error; } catch {} if (r.status < 500 && r.status !== 429) break; }
         }
-        if (!ok) throw new Error(last || "อัปโหลดก้อนที่ " + (n + 1) + " ไม่สำเร็จ");
+        if (!ok) throw new Error((last || "อัปโหลดก้อนที่ " + (n + 1) + " ไม่สำเร็จ") + " (HTTP " + code + ")");
         it._up.pct = Math.round(((n + 1) / chunks) * 100); refresh();
       }
       const f = await J("/api/admin-video", "POST", { action: "finish", vid: id });
       if (!f.ok) throw new Error((f.data && f.data.error) || "ปิดงานอัปโหลดไม่สำเร็จ");
-      it[key] = f.data.video; it._up = null;
+      it[key] = f.data.video; it._up = playable ? null : { warn: "อัปโหลดสำเร็จ แต่เบราว์เซอร์นี้เปิดไฟล์นี้ไม่ได้ (โค้ดเดกอาจเป็น HEVC/H.265) ผู้ชมบางคนอาจเล่นไม่ได้ ถ้าพรีวิวไม่ขึ้นภาพแนะนำแปลงเป็น H.264 + AAC" };
     } catch (e) { it._up = { err: String(e.message || e) }; }
     uploading--; refresh();
   }
   function vidWidget(w, it, key) {
     const box = h("div", "vidw"); w.appendChild(box);
-    const file = document.createElement("input"); file.type = "file"; file.accept = "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"; file.hidden = true;
+    const file = document.createElement("input"); file.type = "file"; file.accept = "video/*,.mp4,.m4v,.mov,.webm,.mkv"; file.hidden = true;
     const refresh = () => {
-      box.textContent = ""; box.appendChild(h("small", "", "🎬 วิดีโอแนบ (ไม่ใช่ลิงก์ YouTube) จะขึ้นเล่นในหน้าประกาศเมื่อถึงเวลาประกาศเท่านั้น · MP4/WebM ไม่จำกัดขนาด (ไฟล์ใหญ่ใช้เวลาอัปโหลดนาน อย่าปิดหน้านี้)"));
+      box.textContent = ""; box.appendChild(h("small", "", "🎬 วิดีโอแนบ (ไม่ใช่ลิงก์ YouTube) จะขึ้นเล่นในหน้าประกาศเมื่อถึงเวลาประกาศเท่านั้น · MP4 / MOV / WebM ทุกแบบ ไม่จำกัดขนาด (ไฟล์ใหญ่ใช้เวลาอัปโหลดนาน อย่าปิดหน้านี้)"));
       const v = it[key], up = it._up;
       if (up && up.pct != null) { box.appendChild(h("div", "vst", `กำลังอัปโหลด ${up.name} ... ${up.pct}%`)); const bar = h("div", "ev-bar"), i = h("i"); i.style.width = up.pct + "%"; bar.appendChild(i); box.appendChild(bar); }
       else {
         if (up && up.err) box.appendChild(h("div", "vst bad", "✖ " + up.err));
+        if (up && up.warn) box.appendChild(h("div", "vst warn", "⚠ " + up.warn));
         if (v) {
           box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
           const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onerror = () => box.appendChild(h("div", "vst bad", "✖ พรีวิวเล่นไม่ได้ (รหัส " + (pv.error ? pv.error.code : "?") + ") ลองอัปโหลดใหม่")); box.appendChild(pv);

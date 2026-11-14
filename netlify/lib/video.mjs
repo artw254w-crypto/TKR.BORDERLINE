@@ -17,8 +17,10 @@ const cleanName = (v) => String(v ?? "").replace(/[\u0000-\u001f\u007f<>]/g, "")
 // ตรวจชนิดจากไบต์จริง (MP4/MOV = ftyp, WebM = EBML) ไม่เชื่อนามสกุลหรือ content-type
 export function sniffVideo(b) {
   if (!b || b.length < 12) return "";
-  if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return "video/mp4";
-  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return "video/webm";
+  const t = String.fromCharCode(b[4], b[5], b[6], b[7]);
+  // MP4/MOV/M4V ทุกแบบ: กล่องแรกอาจเป็น ftyp / moov / mdat / free / skip / wide / styp (ไฟล์จากกล้อง มือถือ โปรแกรมตัดต่อ)
+  if (["ftyp", "moov", "mdat", "free", "skip", "wide", "styp", "pnot"].includes(t)) return "video/mp4";
+  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return "video/webm"; // WebM / MKV
   return "";
 }
 export const chunkLen = (size, n) => { const c = Math.ceil(size / CHUNK); return n < c - 1 ? CHUNK : size - (c - 1) * CHUNK; };
