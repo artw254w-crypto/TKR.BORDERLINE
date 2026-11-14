@@ -7,8 +7,8 @@ export default async (req, ctx) => {
   if (path === "/api/vote" && req.method === "POST") {
     if (!sameOrigin(req)) return json({ error: "forbidden" }, 403);
     const ip = clientIp(req, ctx);
-    if (!(await rateLimit("vote:" + ip, 30, 10 * 60 * 1000))) return json({ error: "โหวตถี่เกินไป ลองใหม่ภายหลัง" }, 429);
-    let b; try { b = await readJson(req, 500); } catch { return json({ error: "ข้อมูลไม่ถูกต้อง" }, 400); }
+    if (!(await rateLimit("vote:" + ip, 30, 10 * 60 * 1000))) return json({ error: "Too many votes. Please try again later." }, 429);
+    let b; try { b = await readJson(req, 500); } catch { return json({ error: "Invalid data" }, 400); }
     const r = await castVote(String(b.pollId || ""), String(b.optionId || ""), ip);
     return r.error ? json({ error: r.error }, r.status) : json({ ok: true, ...publicEvents(await getEvents()) });
   }

@@ -27,6 +27,7 @@
   const show = (id) => { $(id).hidden = false; };
   const hide = (id) => { $(id).hidden = true; };
 
+  const SPEC_EN = { os: "OS", cpu: "Processor", ram: "Memory", gpu: "Graphics", directx: "DirectX", network: "Network", storage: "Storage", sound: "Sound Card", notes: "Additional Notes" };
   /* ---------- ความต้องการระบบ ---------- */
   const SPEC_FIELDS = [
     ["os", "ระบบปฏิบัติการ"], ["cpu", "โปรเซสเซอร์"], ["ram", "หน่วยความจำ"], ["gpu", "กราฟิกส์"],
@@ -37,7 +38,7 @@
   function renderSpecTier(boxId, listId, data) {
     const list = $(listId); list.replaceChildren();
     let n = 0;
-    for (const [k, label] of SPEC_FIELDS) {
+    for (const [k, label0] of SPEC_FIELDS) { const label = SPEC_EN[k] || label0;
       const v = data && data[k];
       if (!v) continue;
       n++;
@@ -87,11 +88,12 @@
 
   // ใช้ textContent ทั้งหมด ไม่มี innerHTML กับข้อมูลที่มาจากผู้ใช้/เซิร์ฟเวอร์ (กัน XSS)
   const ingest = (d) => { if (d && d.now) { skew = d.now - Date.now(); delete d.now; } return d; };
-  const fmtDT = (t) => new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtDT = (t) => new Date(t).toLocaleString("en-US", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtDTth = (t) => new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const left = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 }; };
   function buildOpenCd() {
     const cd = $("openCd"); if (!cd || cd.firstChild) return;
-    [["d", "วัน"], ["h", "ชม."], ["m", "นาที"], ["s", "วิ"]].forEach(([k, l]) => { const box = document.createElement("div"), b = document.createElement("b"), sp = document.createElement("span"); b.dataset.u = k; b.textContent = "00"; sp.textContent = l; box.append(b, sp); cd.appendChild(box); });
+    [["d", "days"], ["h", "hrs"], ["m", "min"], ["s", "sec"]].forEach(([k, l]) => { const box = document.createElement("div"), b = document.createElement("b"), sp = document.createElement("span"); b.dataset.u = k; b.textContent = "00"; sp.textContent = l; box.append(b, sp); cd.appendChild(box); });
   }
   // นับถอยหลังถึงเวลาเปิดดาวน์โหลด (ทุกวินาที) ถึงเวลาแล้วดึงสถานะใหม่ทันที
   function tickOpen() {
@@ -100,7 +102,7 @@
     const ms = oa - (Date.now() + skew), v = left(ms);
     buildOpenCd(); cd.hidden = false;
     window.trkCd.bind(cd, () => (cfg && cfg.openAt ? cfg.openAt : 0) - (Date.now() + skew), "open"); // ตัวเลขวิ่งแล้วล็อกเป็นเวลาจริง (cdfx.js)
-    $("dlText").textContent = `🔒 เปิดให้ดาวน์โหลดในอีก ${v.d ? v.d + " วัน " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`;
+    $("dlText").textContent = `🔒 Download opens in ${v.d ? v.d + "d " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`;
     if (ms <= 0 && Date.now() - openRefetch > 2000) { openRefetch = Date.now(); loadConfig(); }
   }
   setInterval(tickOpen, 1000);
@@ -120,15 +122,15 @@
     $("hBadge").classList.toggle("off", !on);
     $("hStatus").textContent = on ? "SERVER ONLINE" : "MAINTENANCE";
     { const cs = $("cySys"); if (cs) { cs.textContent = on ? "system online" : "system offline : maintenance"; cs.classList.toggle("off", !on); } }
-    $("gridStatus").textContent = on ? "🟢 พร้อมใช้งาน (Ready)" : "🔴 ปิดปรับปรุง (Offline)";
+    $("gridStatus").textContent = on ? "🟢 Ready" : "🔴 Offline (maintenance)";
     $("notice").classList.toggle("off", !on);
     $("noticeIcon").textContent = on ? "✔" : "⚠";
-    $("noticeTitle").textContent = on ? "ไฟล์พร้อมสำหรับการดาวน์โหลด" : (cfg.openAt ? "ปิดดาวน์โหลดชั่วคราว · จะเปิดวันที่ " + fmtDT(cfg.openAt) : "ระบบไม่พร้อมดาวน์โหลดชั่วคราว");
+    $("noticeTitle").textContent = on ? "The file is ready to download" : (cfg.openAt ? "Downloads are paused · opens " + fmtDT(cfg.openAt) : "Downloads are temporarily unavailable");
     $("noticeDesc").textContent = on
-      ? "ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB"
-      : cfg.maintenanceMsg || "อยู่ระหว่างการปรับปรุงระบบ";
+      ? "Direct high-speed download. Please keep at least 20 GB of free space on your device."
+      : cfg.maintenanceMsg || "The system is under maintenance";
     $("dlBtn").disabled = !on;
-    $("dlText").textContent = on ? "🚀 พร้อมดาวน์โหลด (คลิกที่นี่)" : "🔒 ระบบปิดปรับปรุงชั่วคราว";
+    $("dlText").textContent = on ? "🚀 Ready to download (click here)" : "🔒 Temporarily closed for maintenance";
     tickOpen();
     renderSpecs(cfg.specs);
     applyImages(cfg.img);
@@ -139,7 +141,7 @@
     if (r.ok) { cfg = ingest(r.data); render(); if (bc) bc.postMessage({ cfg }); }
     else {
       $("title").textContent = "T.R.K : BORDER LINE";
-      $("noticeDesc").textContent = "โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้านี้";
+      $("noticeDesc").textContent = "Couldn't load the data. Please refresh this page.";
     }
   }
 
@@ -148,15 +150,15 @@
 
   const isUrl = (u) => typeof u === "string" && u.startsWith("https://");
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const errText = (st) => st === 429 ? "คุณกดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
-    : st === 503 ? "ระบบปิดปรับปรุงอยู่ในขณะนี้" : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง";
+  const errText = (st) => st === 429 ? "You're clicking too often. Please wait a moment and try again."
+    : st === 503 ? "The system is currently down for maintenance" : "Something went wrong. Please try again.";
 
   function showError(status) {
     clearInterval(timer);
     $("count").textContent = "✖";
     $("popMsg").textContent = errText(status);
     $("prog").style.width = "0%";
-    const go = $("popGo"); go.disabled = true; go.onclick = null; go.textContent = "⏳ กำลังเตรียม...";
+    const go = $("popGo"); go.disabled = true; go.onclick = null; go.textContent = "⏳ Preparing...";
   }
 
   // กดแล้วป๊อปอัปเปิดและนับถอยหลังทันที (ไม่รอเซิร์ฟเวอร์) ส่วนการขอ token ทำพร้อมกันเบื้องหลัง
@@ -169,8 +171,8 @@
     const total = (cfg && cfg.cooldownSec) || 5;
     let left = total;
 
-    go.disabled = true; go.onclick = null; go.textContent = `⏳ กำลังเตรียมไฟล์ (${left}s)...`;
-    $("popMsg").textContent = "ระบบกำลังเตรียมลิงก์ดาวน์โหลดให้ รอสักครู่นะ";
+    go.disabled = true; go.onclick = null; go.textContent = `⏳ Preparing your file (${left}s)...`;
+    $("popMsg").textContent = "Your download link is being prepared. Please wait a moment.";
     $("count").textContent = left;
     prog.style.transition = "none"; prog.style.width = "100%"; void prog.offsetWidth; prog.style.transition = "";
     show("popup");
@@ -180,7 +182,7 @@
     started.then((s) => { if (run === popupRun && !s.ok) showError(s.status); });
 
     const finish = async () => {
-      go.textContent = "🚀 กำลังเปิดลิงก์...";
+      go.textContent = "🚀 Opening link...";
       const s = await started;
       if (run !== popupRun || !s.ok) return;
       let r = { ok: false, status: 0, data: {} };
@@ -193,7 +195,7 @@
       }
       if (r.ok && isUrl(r.data.url)) {
         const url = r.data.url;
-        go.disabled = false; go.textContent = "🚀 เริ่มดาวน์โหลด!";
+        go.disabled = false; go.textContent = "🚀 Start download!";
         go.onclick = () => {
           // แจ้งเซิร์ฟเวอร์ว่ากดดาวน์โหลดจริง (เพื่อบันทึกประวัติ) แล้วไปต่อทันที ไม่รอผล
           fetch("/api/download", { method: "POST", headers: { "content-type": "application/json" },
@@ -202,7 +204,7 @@
           closePopup(); window.location.href = url;
         };
       } else {
-        $("popMsg").textContent = "ขอลิงก์ไม่สำเร็จ กรุณากดยกเลิกแล้วลองใหม่";
+        $("popMsg").textContent = "Couldn't get your link. Please cancel and try again.";
       }
     };
 
@@ -211,7 +213,7 @@
       if (left > 0) {
         $("count").textContent = left;
         prog.style.width = ((left - 1) / total) * 100 + "%";
-        go.textContent = `⏳ กำลังเตรียมไฟล์ (${left}s)...`;
+        go.textContent = `⏳ Preparing your file (${left}s)...`;
         return;
       }
       clearInterval(timer);
@@ -228,15 +230,19 @@
   const loadToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } };
   let vRun = 0, vSkipMd5 = false;
 
-  // ข้อความที่ผู้ใช้เห็นจะไม่มีคำว่า Google Drive (รายละเอียดเต็มดูได้ในแผงแอดมิน → ประวัติดาวน์โหลด)
-  const pub = (s) => String(s || "")
-    .replace(/\(Drive ไม่ให้ MD5[^)]*\)/g, "(ตรวจเนื้อไฟล์ละเอียดไม่ได้ ถ้าแตกไฟล์แล้วขึ้น error ให้โหลดใหม่)")
-    .replace(/\s*บน Google Drive/g, "").replace(/\s*บน Drive/g, "")
-    .replace(/Google Drive/g, "ต้นฉบับ").replace(/Drive/g, "ต้นฉบับ");
+  // ข้อความผลตรวจที่ผู้ใช้เห็น (อังกฤษ) แปลงจากรหัสสถานะ ไม่ใช้ข้อความไทยจากเซิร์ฟเวอร์ (แอดมินยังเห็นข้อความไทยเต็มในประวัติ)
+  const VERIFY_EN = {
+    ok: ["File is complete", "The size and MD5 match the original."],
+    ok_size_only: ["File size matches the original", "The contents couldn't be checked in detail. If the archive fails to extract, download it again."],
+    corrupt_size: ["File is corrupted: size doesn't match", "The size of your file differs from the original, so the download was probably cut off. Delete it and download again."],
+    corrupt_md5: ["File is corrupted: contents don't match", "The size matches but the MD5 differs, so some data was damaged during download. Delete the file and download again."],
+    unverifiable: ["Can't verify the file right now", "Please try again later."],
+    drive_unavailable: ["Can't verify the file right now", "Please try again later."],
+  };
   function vResult(level, title, detail, status) {
     const box = $("vRes"); box.className = "vres " + level;
-    if (status === "drive_unavailable" || status === "unverifiable") { title = "ตรวจไฟล์ไม่ได้ในตอนนี้"; detail = "ลองตรวจอีกครั้งภายหลัง"; }
-    $("vTitle").textContent = pub(title); $("vDetail").textContent = pub(detail); box.hidden = false;
+    const m = status && VERIFY_EN[status];
+    $("vTitle").textContent = m ? m[0] : (status ? "Verification finished" : title); $("vDetail").textContent = m ? m[1] : (status ? "" : detail); box.hidden = false;
   }
   function vNote(text) { const m = $("vMsg"); m.textContent = text || ""; m.hidden = !text; }
   function vBusy(on) {
@@ -263,47 +269,47 @@
     return h.hex();
   }
 
-  const verifyErr = (r) => r.status === 0 ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"
-    : r.data.error === "expired" || r.data.error === "invalid_token" ? "การขอดาวน์โหลดครั้งล่าสุดหมดอายุหรือไม่ถูกต้อง (ตรวจได้ภายใน 7 วันหลังกดดาวน์โหลด) กรุณากดดาวน์โหลดใหม่แล้วตรวจอีกครั้ง"
-    : r.data.error === "no_log" ? "ไม่พบรายการดาวน์โหลดนี้ในระบบ กรุณากดดาวน์โหลดใหม่"
-    : r.status === 429 ? "ตรวจบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
-    : "เซิร์ฟเวอร์ตรวจไฟล์ไม่สำเร็จ (" + (r.data.error || "HTTP " + r.status) + ") กรุณาลองใหม่";
+  const verifyErr = (r) => r.status === 0 ? "Couldn't reach the server. Check your internet connection and try again."
+    : r.data.error === "expired" || r.data.error === "invalid_token" ? "Your last download request has expired or is invalid (you can verify within 7 days of downloading). Please download again, then verify."
+    : r.data.error === "no_log" ? "We couldn't find this download. Please download again."
+    : r.status === 429 ? "Too many checks. Please wait a moment and try again."
+    : "The server couldn't check the file (" + (r.data.error || "HTTP " + r.status) + "). Please try again.";
 
   async function runVerify() {
     const f = $("vFile").files && $("vFile").files[0];
     $("vRes").hidden = true;
-    if (!f) { vNote("กรุณาเลือกไฟล์ที่ดาวน์โหลดมาก่อน"); return; }
+    if (!f) { vNote("Please choose the downloaded file first"); return; }
     const token = loadToken();
     if (!token) {
       vNote("");
-      vResult("warn", "ยังไม่พบการดาวน์โหลดในเบราว์เซอร์นี้", "กดปุ่มดาวน์โหลดจากหน้านี้ก่อน แล้วค่อยกลับมาตรวจไฟล์ (ระบบต้องรู้ว่าไฟล์ของคุณมาจากการขอดาวน์โหลดครั้งไหน)");
+      vResult("warn", "No download found in this browser", "Press the download button on this page first, then come back to verify the file (we need to know which download request your file came from).");
       return;
     }
     const run = ++vRun; vSkipMd5 = false;
-    vBusy(true); $("vProg").style.width = "0%"; vNote("กำลังเทียบขนาดไฟล์กับต้นฉบับ...");
+    vBusy(true); $("vProg").style.width = "0%"; vNote("Comparing the file size with the original...");
     const post = (extra) => api("/api/download", "POST", { action: "verify", token, size: f.size, name: f.name, ...extra });
 
     let r = await post({});
     if (!vAlive(run)) return;
     if (r.ok && r.data.final === false && r.data.status === "need_md5") {
       $("vSkip").hidden = false;
-      vNote("ขนาดตรงกันแล้ว กำลังตรวจเนื้อไฟล์ (MD5) ไฟล์ใหญ่ใช้เวลาสักครู่ อย่าปิดหน้านี้");
+      vNote("Size matches. Checking the contents (MD5). Large files take a while, so please keep this page open.");
       let md5;
       try { md5 = await md5File(f, run); }
       catch {
         if (!vAlive(run)) return;
         vBusy(false); vNote("");
-        vResult("error", "อ่านไฟล์ไม่สำเร็จ", "เบราว์เซอร์อ่านไฟล์นี้ไม่ได้ (ไฟล์ถูกลบ/ย้าย/ถูกโปรแกรมอื่นใช้อยู่ หรือไฟล์เสียหาย) ลองเลือกไฟล์ใหม่ หรือดาวน์โหลดใหม่");
+        vResult("error", "Couldn't read the file", "Your browser couldn't read this file (it may have been deleted, moved, in use by another program, or damaged). Choose the file again or download it again.");
         return;
       }
       if (!vAlive(run)) return;
-      vNote("กำลังเทียบผลกับต้นฉบับ...");
+      vNote("Comparing the result with the original...");
       r = await post(md5 ? { md5 } : { skipMd5: true });
       if (!vAlive(run)) return;
     }
     vBusy(false); vNote("");
     if (r.ok) vResult(r.data.level === "ok" ? "ok" : r.data.level === "error" ? "error" : "warn", r.data.title, r.data.detail, r.data.status);
-    else vResult("error", "ตรวจไฟล์ไม่สำเร็จ", verifyErr(r));
+    else vResult("error", "Verification failed", verifyErr(r));
   }
 
   /* ---------- รูปกรอบหน้าปก + รูปพื้นหลัง (อัปโหลดจากแผงแอดมิน) ---------- */
@@ -335,13 +341,13 @@
   function renderScan() {
     // หน้าหลักแสดงเฉพาะสถานะสั้น ๆ รายละเอียด (เครื่องมือ วันที่ MD5 ฯลฯ) ดูได้ในแผงแอดมิน หัวข้อ 4
     const el = $("scanStat"), sub = $("scanSub"), s = scan;
-    let cls = "scan-none", t = "🛡 กำลังตรวจสอบสถานะ...", u = "";
+    let cls = "scan-none", t = "🛡 Checking status...", u = "";
     if (s) {
-      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 สแกนไวรัสแล้ว: ไม่พบภัย"; }
-      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 มีผลสแกน (รอยืนยันไฟล์)"; }
-      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ ไฟล์ถูกเปลี่ยนหลังสแกนล่าสุด"; }
-      else if (s.state === "infected") { cls = "scan-bad"; t = "⛔ พบมัลแวร์ในไฟล์ที่สแกน"; u = "กรุณาอย่าดาวน์โหลดจนกว่าผู้ดูแลจะแก้ไข"; }
-      else { t = "🛡 ยังไม่ได้สแกนไวรัส"; }
+      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 Virus scanned: no threats found"; }
+      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 Scan result available (file pending confirmation)"; }
+      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ File changed since the last scan"; }
+      else if (s.state === "infected") { cls = "scan-bad"; t = "⛔ Malware found in the scanned file"; u = "Please do not download until the admin fixes this."; }
+      else { t = "🛡 Not virus scanned yet"; }
     }
     el.className = cls; el.textContent = t; sub.textContent = u;
   }
@@ -391,7 +397,7 @@
       if (!reopenPicker) { reopenPicker = trkDT(0, { clearable: true, min: Date.now(), defaultHour: 12, placeholder: "เลือกวันเวลาที่จะเปิดอัตโนมัติ (ไม่ตั้ง = เปิดเอง)" }); $("fReopenBox").appendChild(reopenPicker); }
       reopenPicker.ms = re;
       $("reopenWrap").hidden = st !== "OFFLINE";
-      $("openLink").textContent = c.linkedOpenAt ? "🔗 ผูกกับประกาศ: มีรายการตั้งเวลาเปิดไฟล์ไว้ " + fmtDT(c.linkedOpenAt) + " (แก้ที่ปุ่ม 📅 เวลา/ประกาศ/โหวต) ไฟล์จะถูกล็อกจนถึงเวลานั้น" : ""; }
+      $("openLink").textContent = c.linkedOpenAt ? "🔗 ผูกกับประกาศ: มีรายการตั้งเวลาเปิดไฟล์ไว้ " + fmtDTth(c.linkedOpenAt) + " (แก้ที่ปุ่ม 📅 เวลา/ประกาศ/โหวต) ไฟล์จะถูกล็อกจนถึงเวลานั้น" : ""; }
     { const tr = document.querySelector(`input[name="theme"][value="${c.theme || "F"}"]`); if (tr) tr.checked = true; }
     hide("saveErr"); hide("saveOk");
   }

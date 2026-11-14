@@ -63,13 +63,13 @@ export function publicEvents(e, now = Date.now()) {
   const releases = [];
   for (const r of e.releases || []) {
     if (r.openAt > now) releases.push({ id: r.id, title: r.title, desc: r.desc, openAt: r.openAt });
-    else feed.push({ id: "r" + r.id, title: r.announceTitle || `เปิดเนื้อหาแล้ว: ${r.title}`, body: r.announceBody || r.desc, at: r.openAt, auto: true, ...pubVid(r.announceVideo) });
+    else feed.push({ id: "r" + r.id, title: r.announceTitle || `Now open: ${r.title}`, body: r.announceBody || r.desc, at: r.openAt, auto: true, ...pubVid(r.announceVideo) });
   }
   const polls = (e.polls || []).filter((p) => p.startsAt <= now + 7 * 864e5).map((p) => {
     const status = pollStatus(p, now), total = p.options.reduce((s, o) => s + o.votes, 0);
     const top = Math.max(...p.options.map((o) => o.votes));
     const winners = status === "ended" && top > 0 ? p.options.filter((o) => o.votes === top).map((o) => o.id) : [];
-    if (status === "ended") feed.push({ id: "p" + p.id, title: `ผลโหวต: ${p.question}`, body: winners.length ? `ผู้ชนะ: ${p.options.filter((o) => winners.includes(o.id)).map((o) => o.label).join(", ")}${p.winnerNote ? " · " + p.winnerNote : ""}` : "ไม่มีผู้โหวต", at: p.endsAt, auto: true });
+    if (status === "ended") feed.push({ id: "p" + p.id, title: `Poll results: ${p.question}`, body: winners.length ? `Winner: ${p.options.filter((o) => winners.includes(o.id)).map((o) => o.label).join(", ")}${p.winnerNote ? " · " + p.winnerNote : ""}` : "No votes", at: p.endsAt, auto: true });
     return { id: p.id, question: p.question, status, startsAt: p.startsAt, endsAt: p.endsAt, total, winners,
       options: p.options.map((o) => ({ id: o.id, label: o.label, votes: o.votes, pct: total ? Math.round((o.votes / total) * 1000) / 10 : 0 })) };
   });
@@ -85,14 +85,14 @@ export async function castVote(pollId, optionId, ip) {
   const e = await getEvents();
   const p = (e.polls || []).find((x) => x.id === pollId);
   const now = Date.now();
-  if (!p) return { error: "ไม่พบโพล", status: 404 };
-  if (pollStatus(p, now) !== "live") return { error: "โพลนี้ไม่ได้เปิดโหวตอยู่", status: 409 };
+  if (!p) return { error: "Poll not found", status: 404 };
+  if (pollStatus(p, now) !== "live") return { error: "This poll isn't open for voting", status: 409 };
   const o = p.options.find((x) => x.id === optionId);
-  if (!o) return { error: "ตัวเลือกไม่ถูกต้อง", status: 400 };
+  if (!o) return { error: "Invalid option", status: 400 };
   const h = crypto.createHash("sha256").update(`${ip}|${p.id}`).digest("hex").slice(0, 32);
   const vk = "evvoters/" + p.id;
   let voters = []; try { voters = (await s.get(vk, { type: "json" })) || []; } catch {}
-  if (voters.includes(h)) return { error: "คุณโหวตโพลนี้ไปแล้ว", status: 409 };
+  if (voters.includes(h)) return { error: "You've already voted in this poll", status: 409 };
   voters.push(h); await s.setJSON(vk, voters.slice(-20000));
   o.votes++; await saveEvents(e);
   return { ok: true };

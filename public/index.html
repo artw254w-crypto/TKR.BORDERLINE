@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -19,12 +19,12 @@
 <body>
 <div id="cursor"></div><div id="cursorDot"></div>
 <canvas id="bg"></canvas>
-<a class="hp-skip" href="#download">ข้ามไปที่ปุ่มดาวน์โหลด</a>
+<a class="hp-skip" href="#download">Skip to the download button</a>
 
 <header class="hp-head">
   <div class="hp-wrap hp-bar">
     <a class="hp-brand" href="#top"><span class="hp-logo" aria-hidden="true">🎯</span><span>T.R.K <b>BORDER LINE</b></span></a>
-    <nav class="hp-nav" aria-label="เมนูหลัก"><a href="#download">ดาวน์โหลด</a><a href="#steps">วิธีติดตั้ง</a><a href="#specs">สเปคเครื่อง</a></nav>
+    <nav class="hp-nav" aria-label="Main menu"><a href="#download">Download</a><a href="#steps">How to install</a><a href="#specs">System requirements</a></nav>
     <div class="hp-right">
       <div id="hBadge" class="badge"><span class="dot pulse"></span><span id="hStatus">SERVER ONLINE</span></div>
       <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ" hidden>⚙</button>
@@ -36,7 +36,7 @@
   <section class="hp-wrap hp-hero">
     <div class="hp-visual">
       <div class="hp-cover">
-        <img id="coverImg" class="cover-img" alt="ภาพจากเกม" decoding="async" hidden>
+        <img id="coverImg" class="cover-img" alt="Game screenshot" decoding="async" hidden>
         <span id="coverHero" class="hero" hidden>🎯</span>
         <span class="hp-build">BUILD 2026.1</span>
       </div>
@@ -45,16 +45,16 @@
     <div class="hp-copy">
       <h1 id="title">T.R.K : BORDER LINE</h1>
       <div id="cySys" class="cy-sys">system online</div>
-      <p id="subtitle" class="hp-lead">เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์</p>
+      <p id="subtitle" class="hp-lead">Tactical first-person shooter (FPS). Experience realistic simulated combat and intense frontline missions.</p>
       <div class="hp-rule" aria-hidden="true"></div>
       <div class="hp-panel">
-      <p id="story" class="hp-story">ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม</p>
+      <p id="story" class="hp-story">You play a soldier in a conflict zone along a fictional border region, with a focus on realism, planning, and teamwork.</p>
 
       <h2 class="hp-ph">FILE INFO</h2>
-      <ul class="hp-facts" aria-label="ข้อมูลไฟล์">
-        <li><span>ขนาดไฟล์</span><b id="size">15.1 GB</b></li>
-        <li><span>เวอร์ชัน</span><b id="version">v1.0.0</b></li>
-        <li><span>รองรับระบบ</span><b id="os">Windows 10/11 64-bit</b></li>
+      <ul class="hp-facts" aria-label="File info">
+        <li><span>File size</span><b id="size">15.1 GB</b></li>
+        <li><span>Version</span><b id="version">v1.0.0</b></li>
+        <li><span>Supported OS</span><b id="os">Windows 10/11 64-bit</b></li>
       </ul>
       </div>
 
@@ -63,38 +63,38 @@
       <div id="download" class="hp-cta">
         <button id="dlBtn" class="hp-dl" type="button">
           <span class="hp-dl-ic" aria-hidden="true">⬇</span>
-          <span class="hp-dl-tx"><span id="dlText">🚀 พร้อมดาวน์โหลด (คลิกที่นี่)</span><small>ระบบจะเตรียมลิงก์ให้ไม่กี่วินาที</small></span>
+          <span class="hp-dl-tx"><span id="dlText">🚀 Ready to download (click here)</span><small>We'll prepare your link in a few seconds</small></span>
         </button>
-        <button id="verifyBtn" class="hp-link" type="button">🔍 ตรวจว่าไฟล์ที่โหลดมาสมบูรณ์ไหม</button>
+        <button id="verifyBtn" class="hp-link" type="button">🔍 Check that your downloaded file is complete</button>
       </div>
 
       <div id="notice" class="notice">
         <span id="noticeIcon" class="n-icon" aria-hidden="true">✔</span>
-        <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div><div id="openCd" class="cd" hidden></div></div>
+        <div><div id="noticeTitle" class="n-title">The file is ready to download</div><div id="noticeDesc" class="n-desc">Direct high-speed download. Please keep at least 20 GB of free space on your device.</div><div id="openCd" class="cd" hidden></div></div>
       </div>
 
       <div class="hp-trust">
-        <div><small>สถานะเซิร์ฟเวอร์</small><b id="gridStatus">🟢 พร้อมใช้งาน (Ready)</b></div>
-        <div><small>ความปลอดภัยของไฟล์</small><b id="scanStat" class="scan-none">🛡 กำลังตรวจสอบสถานะ...</b><span id="scanSub" class="scan-sub"></span></div>
+        <div><small>Server status</small><b id="gridStatus">🟢 Ready</b></div>
+        <div><small>File security</small><b id="scanStat" class="scan-none">🛡 Checking status...</b><span id="scanSub" class="scan-sub"></span></div>
       </div>
       </div>
     </div>
   </section>
 
   <section id="steps" class="hp-wrap hp-sec" aria-labelledby="stepsT">
-    <h2 id="stepsT">ติดตั้งง่ายใน 3 ขั้นตอน</h2>
+    <h2 id="stepsT">Easy install in 3 steps</h2>
     <ol class="hp-steps">
-      <li><span class="n">1</span><h3>ดาวน์โหลดไฟล์</h3><p>กดปุ่มดาวน์โหลด รอเตรียมลิงก์สักครู่แล้วกดเริ่มโหลด ควรมีพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</p></li>
-      <li><span class="n">2</span><h3>แตกไฟล์</h3><p>แตกไฟล์ ZIP / RAR ด้วย WinRAR หรือ 7-Zip เวอร์ชันล่าสุด หากแตกไฟล์ไม่ได้ ให้ปิดโปรแกรมป้องกันไวรัสชั่วคราวแล้วลองใหม่</p></li>
-      <li><span class="n">3</span><h3>เปิดเล่น</h3><p>เปิดไฟล์ <code>BORDERLINE2</code> ในโฟลเดอร์ที่แตกไว้ ได้เลยทันที</p></li>
+      <li><span class="n">1</span><h3>Download the file</h3><p>Press the download button, wait a moment for the link to be prepared, then start the download. Keep at least 20 GB of free space.</p></li>
+      <li><span class="n">2</span><h3>Extract the files</h3><p>Extract the ZIP / RAR with the latest WinRAR or 7-Zip. If extraction fails, temporarily turn off your antivirus and try again.</p></li>
+      <li><span class="n">3</span><h3>Play</h3><p>Open <code>BORDERLINE2</code> in the extracted folder and you are ready to go.</p></li>
     </ol>
   </section>
 
   <section id="specs" class="hp-wrap hp-sec" hidden aria-labelledby="specsTitle">
-    <h2 id="specsTitle">ความต้องการของระบบ</h2>
+    <h2 id="specsTitle">System requirements</h2>
     <div class="hp-specs">
-      <div id="specMinBox" class="hp-spec"><h3 class="specs-t">ขั้นต่ำ</h3><div id="specMin"></div></div>
-      <div id="specRecBox" class="hp-spec rec"><h3 class="specs-t">แนะนำ</h3><div id="specRec"></div></div>
+      <div id="specMinBox" class="hp-spec"><h3 class="specs-t">Minimum</h3><div id="specMin"></div></div>
+      <div id="specRecBox" class="hp-spec rec"><h3 class="specs-t">Recommended</h3><div id="specRec"></div></div>
     </div>
   </section>
 </main>
@@ -110,16 +110,16 @@
 <div id="popup" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="popTitle">
   <div class="box center">
     <div class="hourglass">⏳</div>
-    <h3 id="popTitle" class="orb">กำลังเตรียมสมรภูมิรบ...</h3>
-    <p id="popMsg" class="desc">ระบบกำลังเตรียมลิงก์ดาวน์โหลดให้ รอสักครู่นะ</p>
+    <h3 id="popTitle" class="orb">Preparing the battlefield...</h3>
+    <p id="popMsg" class="desc">Your download link is being prepared. Please wait a moment.</p>
     <div class="counter">
       <div id="count" class="orb amber big">5</div>
-      <small>วินาทีก่อนปลดล็อกลิงก์ดาวน์โหลด</small>
+      <small>seconds until your download link unlocks</small>
       <div class="progress"><div id="prog"></div></div>
     </div>
     <div class="btns">
-      <button id="popCancel" class="btn ghost" type="button">❌ ยกเลิก</button>
-      <button id="popGo" class="btn" type="button" disabled>⏳ กำลังเตรียม...</button>
+      <button id="popCancel" class="btn ghost" type="button">❌ Cancel</button>
+      <button id="popGo" class="btn" type="button" disabled>⏳ Preparing...</button>
     </div>
   </div>
 </div>
@@ -127,16 +127,16 @@
 <!-- ตรวจไฟล์ที่ดาวน์โหลดมา: เบราว์เซอร์คำนวณขนาด/MD5 ในเครื่อง ไม่อัปโหลดไฟล์ -->
 <div id="verify" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="verifyTitle">
   <div class="box">
-    <button class="x" data-close="verify" type="button" aria-label="ปิด">✕</button>
-    <div class="center"><div class="shield">🔍</div><h3 id="verifyTitle" class="orb">ตรวจไฟล์ที่ดาวน์โหลด</h3>
-    <p class="desc">เลือกไฟล์ที่โหลดเสร็จแล้วในเครื่องคุณ ระบบจะเทียบขนาดและ MD5 กับไฟล์ต้นฉบับว่าครบหรือเสียหายไหม (คำนวณในเครื่องคุณ ไฟล์ไม่ถูกอัปโหลด)</p></div>
-    <input id="vFile" type="file" aria-label="เลือกไฟล์ที่ดาวน์โหลดมา">
+    <button class="x" data-close="verify" type="button" aria-label="Close">✕</button>
+    <div class="center"><div class="shield">🔍</div><h3 id="verifyTitle" class="orb">Verify your download</h3>
+    <p class="desc">Choose the file you finished downloading. We compare its size and MD5 with the original to check that it is complete and not corrupted. The check runs on your device and your file is never uploaded.</p></div>
+    <input id="vFile" type="file" aria-label="Choose the downloaded file">
     <div id="vProgWrap" class="progress" hidden><div id="vProg"></div></div>
     <p id="vMsg" class="hint" hidden></p>
     <div id="vRes" class="vres" hidden><b id="vTitle"></b><span id="vDetail"></span></div>
     <div class="btns end">
-      <button id="vSkip" class="btn ghost" type="button" hidden>ข้ามการตรวจ MD5</button>
-      <button id="vGo" class="btn" type="button">🔍 เริ่มตรวจไฟล์</button>
+      <button id="vSkip" class="btn ghost" type="button" hidden>Skip MD5 check</button>
+      <button id="vGo" class="btn" type="button">🔍 Start check</button>
     </div>
   </div>
 </div>

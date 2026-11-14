@@ -209,7 +209,7 @@ body{-webkit-touch-callout:none}
 input,textarea{-webkit-touch-callout:default}
 img{-webkit-user-drag:none;user-drag:none}
 html.dt-open body>*{filter:blur(14px);pointer-events:none}
-html.dt-open::after{content:"ปิดเครื่องมือนักพัฒนา (DevTools) เพื่อใช้งานต่อ";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:24px;text-align:center;background:rgba(0,0,0,.85);color:#facc15;font-weight:700;font-size:18px}
+html.dt-open::after{content:"Close developer tools (DevTools) to continue";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:24px;text-align:center;background:rgba(0,0,0,.85);color:#facc15;font-weight:700;font-size:18px}
 
 /* สถานะสแกนไวรัส (สีตามผลจริง ดู renderScan ใน app.js) */
 .stat b.scan-ok{color:#34d399}.stat b.scan-warn{color:var(--amber)}.stat b.scan-bad{color:#fb7185}.stat b.scan-none{color:var(--mute)}

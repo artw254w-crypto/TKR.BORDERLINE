@@ -5,8 +5,8 @@ import { r2Config, probeR2Cached } from "./r2.mjs";
 
 export const DEFAULTS = {
   title: "T.R.K : BORDER LINE",
-  subtitle: "เกมยิงมุมมองบุคคลที่หนึ่ง (First-Person Shooter / FPS) แนวทหารเชิงยุทธวิธี สัมผัสสมรภูมิรบจำลองเสมือนจริงและภารกิจแนวหน้าสุดมันส์",
-  story: "ผู้เล่นรับบทเป็นทหารในสมรภูมิความขัดแย้งบริเวณพื้นที่ชายแดน (ในโลกสมมติ) เน้นความสมจริง การวางแผน และการเล่นเป็นทีม",
+  subtitle: "Tactical first-person shooter (FPS). Experience realistic simulated combat and intense frontline missions.",
+  story: "You play a soldier in a conflict zone along a fictional border region, with a focus on realism, planning, and teamwork.",
   theme: "F", // ธีมหน้าเว็บ A/B/C/D/E (แอดมินเปลี่ยนได้) E = ไซเบอร์ (ค่าเริ่มต้นใหม่)
   themeV: 3,  // เวอร์ชันของค่าธีม: ค่าเก่าที่ยังไม่มีเลขนี้จะถูกย้ายมาเป็นธีม E หนึ่งครั้ง
   fileUrl: "https://drive.google.com/",
@@ -15,7 +15,7 @@ export const DEFAULTS = {
   version: "v1.0.0",
   os: "Windows 10/11 64-bit",
   status: "ONLINE",
-  maintenanceMsg: "ขณะนี้ระบบปิดปรับปรุงชั่วคราวเพื่ออัปเดตเซิร์ฟเวอร์ กรุณากลับมาใหม่อีกครั้งในภายหลัง",
+  maintenanceMsg: "The system is temporarily down for maintenance. Please check back later.",
   cooldownSec: 5,
   reopenAt: 0, // เวลาที่จะเปิดดาวน์โหลดอัตโนมัติหลังปิดปรับปรุง (ms, 0 = ไม่ตั้ง)
   adminClaimed: false, // true = เคยมีแอดมินล็อกอินแล้ว → ซ่อนปุ่มเฟืองจากผู้ใช้ทั่วไป (ไม่แสดงในแผงแอดมิน/ไม่ถูกแก้โดยฟอร์ม)
@@ -24,22 +24,22 @@ export const DEFAULTS = {
     min: {
       os: "Windows 10 64-bit",
       cpu: "Intel Core i5-4590 / AMD FX 8350 equivalent",
-      ram: "แรม 8 GB",
+      ram: "8 GB RAM",
       gpu: "NVIDIA GeForce RTX 2060 super",
-      directx: "เวอร์ชัน 11",
+      directx: "Version 11",
       network: "",
-      storage: "พื้นที่ว่างที่พร้อมใช้งาน 15 GB",
+      storage: "15 GB available space",
       sound: "DirectX compatible",
       notes: "Requires 64-bit processor and operating system\nIntegrated graphics cards not supported\nController support recommended for optimal experience",
     },
     rec: {
       os: "Windows 11 64-bit",
       cpu: "Intel Core i7-8700K / AMD Ryzen 5 3600",
-      ram: "แรม 16 GB",
+      ram: "16 GB RAM",
       gpu: "NVIDIA GeForce RTX 3060 / AMD Radeon RX 6600 XT",
-      directx: "เวอร์ชัน 12",
-      network: "การเชื่อมต่ออินเทอร์เน็ตแบบบรอดแบนด์",
-      storage: "พื้นที่ว่างที่พร้อมใช้งาน 65 MB",
+      directx: "Version 12",
+      network: "Broadband internet connection",
+      storage: "65 MB available space",
       sound: "DirectX compatible with surround sound support",
       notes: "SSD installation recommended for faster loading times\n1080p gaming at 60fps with High settings",
     },

@@ -2,7 +2,8 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const fmt = (t) => new Date(t).toLocaleString("th-TH", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtTh = (t) => new Date(t).toLocaleString("th-TH", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmt = (t) => new Date(t).toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const J = async (url, method = "GET", body) => {
     const r = await fetch(url, { method, headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, credentials: "same-origin", cache: "no-store" });
     let d = null; try { d = await r.json(); } catch {}
@@ -23,12 +24,13 @@
 
   // ใส่วิดีโอให้ <video>: เล่นตรงก่อน ถ้าเล่นไม่ขึ้น (error หรือไม่เริ่มใน 12 วิ) สลับไปทางสำรอง
   // = โหลดทีละชิ้น 1 MB ด้วย fetch ธรรมดา (ไม่พึ่ง Range) ประกอบเป็นไฟล์ในเครื่องแล้วเล่น ใช้ได้แม้การสตรีมถูกตัด/บล็อก
-  function attachVideo(el, v, onFail, note) {
+  function attachVideo(el, v, onFail, note, th) {
+    const M = th ? { load: "กำลังโหลดวิดีโอ", fail: "ดึงไฟล์วิดีโอจากเซิร์ฟเวอร์ไม่สำเร็จ", codec: "เบราว์เซอร์ถอดรหัสไฟล์นี้ไม่ได้ (โค้ดเดกไม่รองรับ)" } : { load: "Loading video", fail: "Couldn't fetch the video from the server", codec: "Your browser can't decode this video (unsupported codec)" };
     const url = "/api/video/" + v.id; let fell = false, timer = 0;
     const fallback = async () => {
       if (fell) return; fell = true; clearTimeout(timer);
       const SL = 1048576, n = Math.max(1, Math.ceil(v.size / SL)), parts = new Array(n); let done = 0, bad = false, next = 0;
-      note("กำลังโหลดวิดีโอ 0% ...");
+      note(M.load + " 0% ...");
       const worker = async () => {
         while (!bad) {
           const i = next++; if (i >= n) return;
@@ -38,13 +40,13 @@
             if (!ok) await new Promise((r) => setTimeout(r, 400 * (t + 1)));
           }
           if (!ok) { bad = true; return; }
-          done++; note(`กำลังโหลดวิดีโอ ${Math.round((done / n) * 100)}% ...`);
+          done++; note(`${M.load} ${Math.round((done / n) * 100)}% ...`);
         }
       };
       await Promise.all([worker(), worker(), worker(), worker()]);
-      if (bad) { note(""); return onFail("ดึงไฟล์วิดีโอจากเซิร์ฟเวอร์ไม่สำเร็จ", true); }
+      if (bad) { note(""); return onFail(M.fail, true); }
       note("");
-      el.addEventListener("error", () => onFail("เบราว์เซอร์ถอดรหัสไฟล์นี้ไม่ได้ (โค้ดเดกไม่รองรับ)", false), { once: true });
+      el.addEventListener("error", () => onFail(M.codec, false), { once: true });
       el.src = URL.createObjectURL(new Blob(parts, { type: v.type })); el.load();
     };
     el.addEventListener("error", () => { if (!fell) fallback(); }, { once: true });
@@ -56,7 +58,7 @@
   // ดาวน์โหลดคลิป LEEKS: ดึงทีละชิ้น 1 MB (ฟังก์ชัน Netlify ส่งไฟล์ใหญ่ทีเดียวไม่ได้) ประกอบเป็นไฟล์แล้วสั่งบันทึก
   const safeName = (t, v) => { const ext = v.type === "video/webm" ? "webm" : "mp4"; const base = String(t || "video").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim().slice(0, 80) || "video"; return base + "." + ext; };
   function leekButton(l) {
-    const v = l.video, btn = h("button", "leek-dl", "▸ ดาวน์โหลดคลิป · " + fmtMB(v.size)); btn.type = "button";
+    const v = l.video, btn = h("button", "leek-dl", "▸ Download clip · " + fmtMB(v.size)); btn.type = "button";
     let busy = false;
     btn.addEventListener("click", async () => {
       if (busy) return; busy = true; btn.disabled = true;
@@ -70,16 +72,16 @@
             if (!ok) await new Promise((r) => setTimeout(r, 400 * (t + 1)));
           }
           if (!ok) { bad = true; return; }
-          done++; btn.textContent = `▸ กำลังโหลด ${Math.round((done / n) * 100)}% ...`;
+          done++; btn.textContent = `▸ Downloading ${Math.round((done / n) * 100)}% ...`;
         }
       };
-      btn.textContent = "▸ กำลังโหลด 0% ...";
+      btn.textContent = "▸ Downloading 0% ...";
       await Promise.all([worker(), worker(), worker(), worker()]);
-      if (bad) { btn.textContent = "✖ โหลดไม่สำเร็จ ลองใหม่"; }
+      if (bad) { btn.textContent = "✖ Download failed. Try again"; }
       else {
         const u = URL.createObjectURL(new Blob(parts, { type: v.type })), a = document.createElement("a");
         a.href = u; a.download = safeName(l.title, v); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000);
-        btn.textContent = "✓ โหลดเสร็จแล้ว (กดอีกครั้งเพื่อโหลดซ้ำ)";
+        btn.textContent = "✓ Done (click again to download again)";
       }
       busy = false; btn.disabled = false;
     });
@@ -91,7 +93,7 @@
     el.controls = true; el.preload = "metadata"; el.playsInline = true; el.setAttribute("controlsList", "nodownload"); el.disablePictureInPicture = true;
     el.addEventListener("pause", () => { if (pending) setTimeout(() => { if (pending && !playing()) { pending = false; render(); } }, 300); });
     box.append(el, note);
-    attachVideo(el, v, (msg) => { box.appendChild(h("div", "ev-vid-err", msg + " — ลองรีเฟรชหน้าหรือเปิดด้วยเบราว์เซอร์อื่น")); }, (t) => { note.textContent = t; note.hidden = !t; });
+    attachVideo(el, v, (msg) => { box.appendChild(h("div", "ev-vid-err", msg + " — try refreshing the page or using another browser")); }, (t) => { note.textContent = t; note.hidden = !t; });
     return box;
   }
   const playing = () => [...document.querySelectorAll("#evRoot video")].some((v) => !v.paused && !v.ended);
@@ -103,39 +105,39 @@
     const keep = new Set([...root.querySelectorAll("details")].filter((d) => !d.open).map((d) => d.dataset.k));
     root.textContent = "";
     if (data.releases.length) {
-      const [d, b] = panel("Next drop · เปิดเนื้อหา"); d.dataset.k = "rel";
+      const [d, b] = panel("Next drop"); d.dataset.k = "rel";
       data.releases.forEach((r) => {
-        const c = h("div", "ev-card"); c.appendChild(h("small", "", "เปิดวันที่ " + fmt(r.openAt))); c.appendChild(h("h4", "", r.title));
+        const c = h("div", "ev-card"); c.appendChild(h("small", "", "Opens " + fmt(r.openAt))); c.appendChild(h("h4", "", r.title));
         if (r.desc) c.appendChild(h("p", "", r.desc));
         const cd = h("div", "cd"); cd.dataset.t = r.openAt;
-        ["d:วัน", "h:ชม.", "m:นาที", "s:วิ"].forEach((x) => { const [k, l] = x.split(":"); const s = h("div"); const b2 = h("b", "", "00"); b2.dataset.u = k; s.appendChild(b2); s.appendChild(h("span", "", l)); cd.appendChild(s); });
+        ["d:days", "h:hrs", "m:min", "s:sec"].forEach((x) => { const [k, l] = x.split(":"); const s = h("div"); const b2 = h("b", "", "00"); b2.dataset.u = k; s.appendChild(b2); s.appendChild(h("span", "", l)); cd.appendChild(s); });
         c.appendChild(cd); b.appendChild(c); window.trkCd.bind(cd, () => +cd.dataset.t - (Date.now() + skew), "r" + r.id);
       });
       root.appendChild(d);
     }
     if (data.announcements.length) {
-      const [d, b] = panel("Announcements · ประกาศ"); d.dataset.k = "ann";
+      const [d, b] = panel("Announcements"); d.dataset.k = "ann";
       data.announcements.forEach((a) => { const c = h("div", "ev-card" + (a.auto ? " auto" : "")); c.appendChild(h("small", "", fmt(a.at))); c.appendChild(h("h4", "", a.title)); if (a.body) c.appendChild(h("p", "", a.body)); if (a.video) c.appendChild(player(a.video)); b.appendChild(c); });
       root.appendChild(d);
     }
     data.polls.forEach((p) => {
-      const [d, b] = panel("Poll · โหวต"); d.dataset.k = "poll" + p.id;
-      const st = { live: "● เปิดโหวต", ended: "▸ จบแล้ว", upcoming: "◷ เร็วๆ นี้" }[p.status];
+      const [d, b] = panel("Poll"); d.dataset.k = "poll" + p.id;
+      const st = { live: "● Voting open", ended: "▸ Ended", upcoming: "◷ Coming soon" }[p.status];
       b.appendChild(h("span", "ev-tag " + p.status, st));
       b.appendChild(h("h4", "", p.question));
-      b.appendChild(h("small", "", p.status === "upcoming" ? "เริ่ม " + fmt(p.startsAt) : (p.status === "live" ? "ปิดโหวต " : "จบเมื่อ ") + fmt(p.endsAt) + " · " + p.total + " โหวต"));
+      b.appendChild(h("small", "", p.status === "upcoming" ? "Starts " + fmt(p.startsAt) : (p.status === "live" ? "Closes " : "Ended ") + fmt(p.endsAt) + " · " + p.total + (p.total === 1 ? " vote" : " votes")));
       const mine = voted()[p.id], msg = h("div", "ev-msg");
       p.options.forEach((o) => {
         const w = p.winners.includes(o.id), box = h("div", "ev-opt" + (w ? " win" : ""));
         const row = h("div", "ev-row"); row.appendChild(h("span", "", (w ? "★ " : "") + o.label)); row.appendChild(h("em", "", p.status === "upcoming" ? "" : o.votes + " · " + o.pct + "%")); box.appendChild(row);
         const bar = h("div", "ev-bar"), i = h("i"); i.style.width = (p.status === "upcoming" ? 0 : o.pct) + "%"; bar.appendChild(i); box.appendChild(bar);
         if (p.status === "live") {
-          const btn = h("button", "ev-vote", mine === o.id ? "✓ โหวตแล้ว" : "โหวต"); btn.type = "button"; btn.disabled = !!mine;
+          const btn = h("button", "ev-vote", mine === o.id ? "✓ Voted" : "Vote"); btn.type = "button"; btn.disabled = !!mine;
           btn.addEventListener("click", async () => {
-            btn.disabled = true; msg.textContent = "กำลังส่ง...";
+            btn.disabled = true; msg.textContent = "Sending...";
             const r = await J("/api/vote", "POST", { pollId: p.id, optionId: o.id });
             if (r.ok) { setVoted(p.id, o.id); data = r.data; skew = data.now - Date.now(); sig = ""; render(); }
-            else { if (r.status === 409) setVoted(p.id, o.id); msg.textContent = (r.data && r.data.error) || "โหวตไม่สำเร็จ"; if (r.status === 409) load(); }
+            else { if (r.status === 409) setVoted(p.id, o.id); msg.textContent = (r.data && r.data.error) || "Couldn't submit your vote"; if (r.status === 409) load(); }
           });
           box.appendChild(btn);
         }
@@ -228,7 +230,7 @@
             let d = "";
             try { const r = await fetch("/api/video/" + v.id + "?s=0&e=1", { credentials: "same-origin", cache: "no-store" }); d = `เซิร์ฟเวอร์ตอบ HTTP ${r.status} · ${r.headers.get("content-type") || "-"}`; } catch (e) { d = "ติดต่อเซิร์ฟเวอร์ไม่ได้: " + e.message; }
             box.appendChild(h("div", "vst bad", `✖ พรีวิวเล่นไม่ได้: ${msg} | ${d}`));
-          }, (t) => { pn.textContent = t; pn.hidden = !t; });
+          }, (t) => { pn.textContent = t; pn.hidden = !t; }, true);
           box.appendChild(pn); box.appendChild(pv);
         }
         const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
@@ -248,7 +250,7 @@
     const seg = h("div", "seg"), body = h("div"), calc = h("div", "calc");
     box.append(h("small", "", "🔓 เปิดให้ดาวน์โหลดไฟล์ (ผูกกับปุ่มดาวน์โหลดหน้าเว็บ: ล็อกพร้อมนับถอยหลังจนถึงเวลานี้ แล้วเปิดเองอัตโนมัติ)"), seg, body, calc);
     const when = () => (o.mode === "at" ? o.at || 0 : o.mode === "after" ? ((it._f[baseKey].ms || 0) + (o.days || 0) * 864e5 + (o.hours || 0) * 36e5) : 0);
-    const upd = () => { const t = when(); calc.textContent = t ? "→ ไฟล์จะเปิดวันที่ " + fmt(t) : ""; };
+    const upd = () => { const t = when(); calc.textContent = t ? "→ ไฟล์จะเปิดวันที่ " + fmtTh(t) : ""; };
     const num = (key, max) => { const i = document.createElement("input"); i.type = "number"; i.min = 0; i.max = max; i.value = o[key] || 0; i.oninput = () => { o[key] = Math.max(0, Math.min(max, parseInt(i.value, 10) || 0)); upd(); }; return i; };
     const draw = () => {
       seg.textContent = "";
