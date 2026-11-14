@@ -101,3 +101,5 @@
 .leek-dl{padding:9px 16px;font:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#3da5ff;background:#020c15;border:1px solid #0a3a4f;cursor:pointer}
 .leek-dl:hover:not(:disabled){border-color:#3da5ff;background:#03182a}
 .leek-dl:disabled{opacity:.7;cursor:progress}
+
+a.leek-dl{display:inline-block;text-decoration:none}

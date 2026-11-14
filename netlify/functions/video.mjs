@@ -11,10 +11,9 @@ export default async (req) => {
   if (!m || !VID_RE.test(m[1])) return nf();
   const id = m[1], now = Date.now(), admin = isAdmin(req);
   const e = await getEvents();
-  let v = null, open = false, leek = false;
+  let v = null, open = false;
   for (const a of e.announcements || []) if (a.video?.id === id) { v = a.video; open = open || a.at <= now; }
   for (const r of e.releases || []) if (r.announceVideo?.id === id) { v = r.announceVideo; open = open || r.openAt <= now; }
-  for (const l of e.leeks || []) if (l.video?.id === id) { v = l.video; open = true; leek = true; } // LEEKS เปิดทันที
   // แอดมินดูตัวอย่างได้แม้ยังไม่ได้กดบันทึกประกาศ (อัปโหลดเสร็จแล้วแต่ยังไม่ผูกกับรายการ)
   if (!v && admin) { const m = await getMeta(id); if (m && m.sealed) v = { id, size: m.size, type: m.type }; }
   if (!v || (!open && !admin)) return nf();
@@ -22,7 +21,7 @@ export default async (req) => {
   const base = { "content-type": v.type, "accept-ranges": "bytes", "x-content-type-options": "nosniff",
     "content-security-policy": "default-src 'none'; sandbox", "cross-origin-resource-policy": "same-origin",
     "cache-control": open && !admin ? "private, max-age=3600" : "private, no-store", // ไม่ใช้ public: กัน CDN แคชช่วง Range ผิดช่วง
-    "content-disposition": leek && new URL(req.url).searchParams.has("dl") ? "attachment" : "inline", vary: "Range, Cookie" };
+    "content-disposition": "inline", vary: "Range, Cookie" };
   if (req.method === "HEAD") return new Response(null, { status: 200, headers: { ...base, "content-length": String(size) } });
   // ทางสำรอง: /api/video/<id>?s=<เริ่ม>&e=<จบ> ตอบ 200 ปกติ (ไม่ใช้ Range/206) ชิ้นละไม่เกิน 1 ก้อนที่เก็บ
   const qs = new URL(req.url).searchParams;

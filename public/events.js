@@ -55,37 +55,10 @@
     el.src = url + "#t=0.1";
   }
 
-  // ดาวน์โหลดคลิป LEEKS: ดึงทีละชิ้น 1 MB (ฟังก์ชัน Netlify ส่งไฟล์ใหญ่ทีเดียวไม่ได้) ประกอบเป็นไฟล์แล้วสั่งบันทึก
-  const safeName = (t, v) => { const ext = v.type === "video/webm" ? "webm" : "mp4"; const base = String(t || "video").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim().slice(0, 80) || "video"; return base + "." + ext; };
+  // LEEKS: ปุ่มเดียว เปิดลิงก์ดาวน์โหลด (เช่น Google Drive) ในแท็บใหม่
   function leekButton(l) {
-    const v = l.video, btn = h("button", "leek-dl", "▸ Download clip · " + fmtMB(v.size)); btn.type = "button";
-    let busy = false;
-    btn.addEventListener("click", async () => {
-      if (busy) return; busy = true; btn.disabled = true;
-      const SL = 1048576, n = Math.max(1, Math.ceil(v.size / SL)), parts = new Array(n); let done = 0, bad = false, next = 0;
-      const worker = async () => {
-        while (!bad) {
-          const i = next++; if (i >= n) return;
-          const a = i * SL, z = Math.min(v.size, (i + 1) * SL) - 1; let ok = false;
-          for (let t = 0; t < 4 && !ok; t++) {
-            try { const r = await fetch(`/api/video/${v.id}?s=${a}&e=${z}`, { credentials: "same-origin" }); if (r.ok) { const b = await r.arrayBuffer(); if (b.byteLength === z - a + 1) { parts[i] = b; ok = true; } } } catch {}
-            if (!ok) await new Promise((r) => setTimeout(r, 400 * (t + 1)));
-          }
-          if (!ok) { bad = true; return; }
-          done++; btn.textContent = `▸ Downloading ${Math.round((done / n) * 100)}% ...`;
-        }
-      };
-      btn.textContent = "▸ Downloading 0% ...";
-      await Promise.all([worker(), worker(), worker(), worker()]);
-      if (bad) { btn.textContent = "✖ Download failed. Try again"; }
-      else {
-        const u = URL.createObjectURL(new Blob(parts, { type: v.type })), a = document.createElement("a");
-        a.href = u; a.download = safeName(l.title, v); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000);
-        btn.textContent = "✓ Done (click again to download again)";
-      }
-      busy = false; btn.disabled = false;
-    });
-    return btn;
+    const a = h("a", "leek-dl", "▸ Download"); a.href = l.url; a.target = "_blank"; a.rel = "noopener noreferrer nofollow";
+    return a;
   }
 
   function player(v) {
@@ -286,9 +259,8 @@
       vidWidget(w, it, "video");
       opensWidget(w, it, "at");
     });
-    sect("◈ LEEKS (หัวข้อ + คลิปวิดีโอ 1 ไฟล์ ผู้ชมกดปุ่มเดียวเพื่อดาวน์โหลด · แสดงทันทีหลังบันทึก)", "leeks", "เพิ่ม LEEK", () => ({ title: "", video: null }), (w, it) => {
-      it._f = { title: field(w, "หัวข้อ / ชื่อคลิป", inp(it.title, "text", 120)) };
-      vidWidget(w, it, "video");
+    sect("◈ LEEKS (หัวข้อ + ลิงก์ดาวน์โหลด ผู้ชมกดปุ่มเดียวเพื่อโหลด · แสดงทันทีหลังบันทึก)", "leeks", "เพิ่ม LEEK", () => ({ title: "", url: "" }), (w, it) => {
+      it._f = { title: field(w, "หัวข้อ", inp(it.title, "text", 120)), url: field(w, "ลิงก์ดาวน์โหลด (Google Drive หรือที่อื่น ต้องขึ้นต้นด้วย https://)", inp(it.url, "url", 2000)) };
     });
     sect("◈ โพลโหวต (ผู้ชนะประกาศอัตโนมัติเมื่อจบ)", "polls", "เพิ่มโพล", () => ({ question: "", options: [{ label: "" }, { label: "" }], startsAt: Date.now(), endsAt: Date.now() + 3 * 864e5, winnerNote: "" }), (w, it) => {
       it._f = { question: field(w, "คำถาม", inp(it.question, "text", 120)) };

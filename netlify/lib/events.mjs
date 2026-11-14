@@ -37,10 +37,11 @@ export function validateEvents(input, current) {
   }));
   if (announcements.some((a) => !a.title || !a.at)) return { error: "ทุกประกาศต้องมีหัวข้อและเวลา" };
   if ([...releases, ...announcements].some((x) => x.opens.mode === "at" && !x.opens.at)) return { error: "เลือกวันเวลาที่จะเปิดไฟล์ดาวน์โหลดให้ครบ" };
-  // LEEKS: หัวข้อ + คลิปวิดีโอ 1 ไฟล์ (ปุ่มดาวน์โหลดปุ่มเดียว) แสดงทันทีไม่ผูกเวลา
-  const leeks = arr(input.leeks, 100).map((l) => ({ id: keepId(l?.id), title: clean(l?.title, 120), video: vref(l?.video) }));
+  // LEEKS: หัวข้อ + ลิงก์ดาวน์โหลด (เช่น Google Drive) ปุ่มเดียว แสดงทันทีไม่ผูกเวลา
+  const okUrl = (v) => { try { const u = new URL(String(v || "").trim()); return u.protocol === "https:" && !u.username && !u.password ? u.href.slice(0, 2000) : ""; } catch { return ""; } };
+  const leeks = arr(input.leeks, 100).map((l) => ({ id: keepId(l?.id), title: clean(l?.title, 120), url: okUrl(l?.url) }));
   if (leeks.some((l) => !l.title)) return { error: "ทุกรายการ LEEKS ต้องมีหัวข้อ" };
-  if (leeks.some((l) => !l.video)) return { error: "ทุกรายการ LEEKS ต้องแนบวิดีโอ 1 ไฟล์ (หรือลบรายการที่ไม่ใช้)" };
+  if (leeks.some((l) => !l.url)) return { error: "ทุกรายการ LEEKS ต้องมีลิงก์ดาวน์โหลดที่ขึ้นต้นด้วย https:// (หรือลบรายการที่ไม่ใช้)" };
   const old = new Map((current.polls || []).map((p) => [p.id, p]));
   const polls = arr(input.polls, 10).map((p) => {
     const id = keepId(p?.id), prev = old.get(id);
@@ -73,7 +74,7 @@ export function publicEvents(e, now = Date.now()) {
     return { id: p.id, question: p.question, status, startsAt: p.startsAt, endsAt: p.endsAt, total, winners,
       options: p.options.map((o) => ({ id: o.id, label: o.label, votes: o.votes, pct: total ? Math.round((o.votes / total) * 1000) / 10 : 0 })) };
   });
-  const leeks = (e.leeks || []).filter((l) => l.video).map((l) => ({ id: l.id, title: l.title, video: { id: l.video.id, type: l.video.type, size: l.video.size, name: l.video.name } }));
+  const leeks = (e.leeks || []).filter((l) => l.url).map((l) => ({ id: l.id, title: l.title, url: l.url }));
   feed.sort((a, b) => b.at - a.at);
   releases.sort((a, b) => a.openAt - b.openAt);
   return { now, releases, announcements: feed.slice(0, 30), polls, leeks };
