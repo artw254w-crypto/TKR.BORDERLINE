@@ -5,6 +5,7 @@
   { const l = document.createElement("link"); l.rel = "stylesheet";
     l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
     document.head.appendChild(l); }
+  let skew = 0, reopenPicker = null, openRefetch = 0;
   let cfg = null, timer = null, popupRun = 0, saving = false, adminUi = false, scan = null;
   const bc = "BroadcastChannel" in window ? new BroadcastChannel("trk-cfg") : null;
 
@@ -85,6 +86,25 @@
   };
 
   // ใช้ textContent ทั้งหมด ไม่มี innerHTML กับข้อมูลที่มาจากผู้ใช้/เซิร์ฟเวอร์ (กัน XSS)
+  const ingest = (d) => { if (d && d.now) { skew = d.now - Date.now(); delete d.now; } return d; };
+  const fmtDT = (t) => new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const left = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 }; };
+  function buildOpenCd() {
+    const cd = $("openCd"); if (!cd || cd.firstChild) return;
+    [["d", "วัน"], ["h", "ชม."], ["m", "นาที"], ["s", "วิ"]].forEach(([k, l]) => { const box = document.createElement("div"), b = document.createElement("b"), sp = document.createElement("span"); b.dataset.u = k; b.textContent = "00"; sp.textContent = l; box.append(b, sp); cd.appendChild(box); });
+  }
+  // นับถอยหลังถึงเวลาเปิดดาวน์โหลด (ทุกวินาที) ถึงเวลาแล้วดึงสถานะใหม่ทันที
+  function tickOpen() {
+    const oa = cfg && cfg.openAt || 0, cd = $("openCd");
+    if (!oa) { if (cd) cd.hidden = true; return; }
+    const ms = oa - (Date.now() + skew), v = left(ms);
+    buildOpenCd(); cd.hidden = false;
+    cd.querySelectorAll("b").forEach((b) => { b.textContent = String(v[b.dataset.u]).padStart(2, "0"); });
+    $("dlText").textContent = `🔒 เปิดให้ดาวน์โหลดในอีก ${v.d ? v.d + " วัน " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`;
+    if (ms <= 0 && Date.now() - openRefetch > 2000) { openRefetch = Date.now(); loadConfig(); }
+  }
+  setInterval(tickOpen, 1000);
+
   function render() {
     if (!cfg) return;
     applyGear();
@@ -103,19 +123,20 @@
     $("gridStatus").textContent = on ? "🟢 พร้อมใช้งาน (Ready)" : "🔴 ปิดปรับปรุง (Offline)";
     $("notice").classList.toggle("off", !on);
     $("noticeIcon").textContent = on ? "✔" : "⚠";
-    $("noticeTitle").textContent = on ? "ไฟล์พร้อมสำหรับการดาวน์โหลด" : "ระบบไม่พร้อมดาวน์โหลดชั่วคราว";
+    $("noticeTitle").textContent = on ? "ไฟล์พร้อมสำหรับการดาวน์โหลด" : (cfg.openAt ? "ปิดดาวน์โหลดชั่วคราว · จะเปิดวันที่ " + fmtDT(cfg.openAt) : "ระบบไม่พร้อมดาวน์โหลดชั่วคราว");
     $("noticeDesc").textContent = on
       ? "ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB"
       : cfg.maintenanceMsg || "อยู่ระหว่างการปรับปรุงระบบ";
     $("dlBtn").disabled = !on;
     $("dlText").textContent = on ? "🚀 พร้อมดาวน์โหลด (คลิกที่นี่)" : "🔒 ระบบปิดปรับปรุงชั่วคราว";
+    tickOpen();
     renderSpecs(cfg.specs);
     applyImages(cfg.img);
   }
 
   async function loadConfig() {
     const r = await api("/api/config");
-    if (r.ok) { cfg = r.data; render(); if (bc) bc.postMessage({ cfg }); }
+    if (r.ok) { cfg = ingest(r.data); render(); if (bc) bc.postMessage({ cfg }); }
     else {
       $("title").textContent = "T.R.K : BORDER LINE";
       $("noticeDesc").textContent = "โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้านี้";
@@ -364,7 +385,13 @@
     $("modeNote").textContent = c.r2Mode
       ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
       : "โหมดส่งไฟล์: Google Drive — เว็บรู้เองไม่ได้ว่าผู้ใช้โหลดจบหรือไม่ ถ้าต้องการรู้ ให้ตั้งค่า Cloudflare R2 ตามไฟล์ README-R2.txt";
-    document.querySelector(`input[name="status"][value="${c.status === "OFFLINE" ? "OFFLINE" : "ONLINE"}"]`).checked = true;
+    { const now = c.now || Date.now(); let st = c.status === "OFFLINE" ? "OFFLINE" : "ONLINE", re = c.reopenAt || 0;
+      if (st === "OFFLINE" && re && re <= now) { st = "ONLINE"; re = 0; } // เปิดอัตโนมัติไปแล้ว
+      document.querySelector(`input[name="status"][value="${st}"]`).checked = true;
+      if (!reopenPicker) { reopenPicker = trkDT(0, { clearable: true, min: Date.now(), defaultHour: 12, placeholder: "เลือกวันเวลาที่จะเปิดอัตโนมัติ (ไม่ตั้ง = เปิดเอง)" }); $("fReopenBox").appendChild(reopenPicker); }
+      reopenPicker.ms = re;
+      $("reopenWrap").hidden = st !== "OFFLINE";
+      $("openLink").textContent = c.linkedOpenAt ? "🔗 ผูกกับประกาศ: มีรายการตั้งเวลาเปิดไฟล์ไว้ " + fmtDT(c.linkedOpenAt) + " (แก้ที่ปุ่ม 📅 เวลา/ประกาศ/โหวต) ไฟล์จะถูกล็อกจนถึงเวลานั้น" : ""; }
     { const tr = document.querySelector(`input[name="theme"][value="${c.theme || "F"}"]`); if (tr) tr.checked = true; }
     hide("saveErr"); hide("saveOk");
   }
@@ -433,6 +460,7 @@
     btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
     const r = await api("/api/admin-config", "PUT", {
       status: document.querySelector('input[name="status"]:checked').value,
+      reopenAt: document.querySelector('input[name="status"]:checked').value === "OFFLINE" && reopenPicker ? reopenPicker.ms : 0,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
       subtitle: $("fSub").value, story: $("fStory").value,
@@ -866,6 +894,7 @@
   $("logClear").addEventListener("click", clearLogsAll);
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.close)));
   // เลือกธีมในแผงแอดมิน = ดูตัวอย่างทันที (ยังไม่บันทึก) ปิดแผงโดยไม่บันทึกจะกลับเป็นธีมที่ใช้จริง
+  document.querySelectorAll('input[name="status"]').forEach((r) => r.addEventListener("change", () => { $("reopenWrap").hidden = document.querySelector('input[name="status"]:checked').value !== "OFFLINE"; }));
   document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener("change", () => window.trkTheme(r.value, false)));
   document.querySelectorAll('[data-close="panel"]').forEach((b) => b.addEventListener("click", () => { if (cfg) window.trkTheme(cfg.theme); }));
   // คลิกที่ว่างนอกกล่อง (พื้นหลังมืด) ของหน้าต่างแอดมินแล้วปิดทันที ไม่ต้องกดกากบาท
@@ -886,7 +915,7 @@
     polling = true;
     const r = await api("/api/config");
     polling = false;
-    if (r.ok && !saving && JSON.stringify(r.data) !== JSON.stringify(cfg)) { cfg = r.data; render(); }
+    if (r.ok && !saving) { ingest(r.data); if (JSON.stringify(r.data) !== JSON.stringify(cfg)) { cfg = r.data; render(); } }
   }
   setInterval(poll, 4000);
   document.addEventListener("visibilitychange", poll);

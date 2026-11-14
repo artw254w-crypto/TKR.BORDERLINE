@@ -43,3 +43,45 @@
 .vidw video{width:100%;max-height:220px;background:#000}
 .vidw .vst{font-size:12px;color:#7fdcf0;word-break:break-all}.vidw .vst.bad{color:#ff4d6d}
 .vidw .ev-bar i{transition:width .2s}
+
+/* ===== ตัวเลือกวัน-เวลา (ปฏิทิน) ===== */
+.tdt{position:relative;display:flex;gap:6px;align-items:stretch}
+.tdt-field{flex:1;display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 12px;border:1px solid var(--bd,#2a3a50);border-radius:10px;background:rgba(255,255,255,.04);color:var(--tx,#e6eefc);font:inherit;font-size:14px;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.tdt-field:hover,.tdt-field[aria-expanded="true"]{border-color:var(--olive,#0064ec);box-shadow:0 0 0 3px color-mix(in srgb,var(--olive,#0064ec) 25%,transparent)}
+.tdt-v.ph{opacity:.55}
+.tdt-x{width:42px;border:1px solid var(--bd,#2a3a50);border-radius:10px;background:transparent;color:#ff6b81;cursor:pointer;font-size:14px}
+.tdt-x[hidden]{display:none}
+.tdt-pop{position:fixed;z-index:95;padding:14px;border:1px solid var(--bd,#2a3a50);border-radius:16px;background:var(--card,#0b1630);color:var(--tx,#e6eefc);box-shadow:0 24px 60px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.04);font-size:14px;line-height:1.3}
+.tdt-pop[hidden]{display:none}
+.tdt-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tdt-head b{font-size:15px;letter-spacing:.02em}
+.tdt-nav{width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.06);color:inherit;font-size:20px;cursor:pointer}
+.tdt-nav:hover{background:var(--olive,#0064ec);color:#fff}
+.tdt-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.tdt-dow{padding:4px 0;font-size:11px;opacity:.55}
+.tdt-d{aspect-ratio:1;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.tdt-d:hover:not(:disabled){background:rgba(255,255,255,.1)}
+.tdt-d.out{opacity:.3}.tdt-d.today{box-shadow:inset 0 0 0 1px var(--olive,#0064ec)}
+.tdt-d.sel{background:var(--olive,#0064ec);color:#fff;font-weight:700;box-shadow:0 0 14px color-mix(in srgb,var(--olive,#0064ec) 60%,transparent)}
+.tdt-d:disabled{opacity:.18;cursor:not-allowed}
+.tdt-time{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd,#2a3a50)}
+.tdt-time select{padding:6px 8px;border:1px solid var(--bd,#2a3a50);border-radius:8px;background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:15px}
+.tdt-time select option{background:#0b1630;color:#e6eefc}
+.tdt-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tdt-quick button{padding:5px 10px;border:1px solid var(--bd,#2a3a50);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.tdt-quick button:hover{border-color:var(--olive,#0064ec);color:var(--olive,#0064ec)}
+.tdt-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.tdt-foot button{padding:8px 18px;border-radius:10px;border:1px solid var(--bd,#2a3a50);background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.tdt-foot .ok{background:var(--olive,#0064ec);border-color:var(--olive,#0064ec);color:#fff;font-weight:700}
+/* ช่อง "เปิดไฟล์ดาวน์โหลด" ในรายการประกาศ/เปิดเนื้อหา */
+.opn{display:grid;gap:8px;padding:10px;border:1px solid var(--bd,#2a3a50);border-radius:12px;background:rgba(255,255,255,.03)}
+.opn .seg{display:flex;flex-wrap:wrap;gap:6px}
+.opn .seg button{flex:1 1 120px;padding:8px 10px;border:1px solid var(--bd,#2a3a50);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.opn .seg button.on{background:var(--olive,#0064ec);border-color:var(--olive,#0064ec);color:#fff;font-weight:700}
+.opn .row2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+.opn .row2 input[type=number]{width:84px}
+.opn .calc{font-size:12px;color:#5cbb38}
+#openCd{margin-top:8px}
+.ev-vid-err{padding:12px;font-size:12px;color:#ff8a9c;background:#1a0008}
+.reopen{display:grid;gap:6px;margin-top:10px}.reopen[hidden]{display:none}
+.cd[hidden]{display:none}

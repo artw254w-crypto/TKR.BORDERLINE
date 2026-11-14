@@ -8,6 +8,12 @@ const clean = (v, n) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000
 const ts = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 && n < 4102444800000 ? Math.floor(n) : 0; };
 const rid = () => crypto.randomBytes(6).toString("hex");
 const vref = (v) => (v && VID_RE.test(String(v.id)) ? { id: String(v.id) } : null);
+const cleanOpens = (o) => {
+  const mode = o?.mode === "at" || o?.mode === "after" ? o.mode : "none";
+  if (mode === "at") return { mode, at: ts(o.at) };
+  if (mode === "after") return { mode, days: Math.min(365, Math.max(0, Math.floor(Number(o.days) || 0))), hours: Math.min(23, Math.max(0, Math.floor(Number(o.hours) || 0))) };
+  return { mode: "none" };
+};
 const keepId = (v) => (/^[a-f0-9]{12}$/.test(String(v)) ? String(v) : rid());
 
 export const EMPTY = { releases: [], announcements: [], polls: [] };
@@ -23,13 +29,14 @@ export function validateEvents(input, current) {
   const arr = (a, max) => (Array.isArray(a) ? a.slice(0, max) : []);
   const releases = arr(input.releases, 20).map((r) => ({
     id: keepId(r?.id), title: clean(r?.title, 80), desc: clean(r?.desc, 300), openAt: ts(r?.openAt),
-    announceTitle: clean(r?.announceTitle, 80), announceBody: clean(r?.announceBody, 400), announceVideo: vref(r?.announceVideo),
+    announceTitle: clean(r?.announceTitle, 80), announceBody: clean(r?.announceBody, 400), announceVideo: vref(r?.announceVideo), opens: cleanOpens(r?.opens),
   }));
   if (releases.some((r) => !r.title || !r.openAt)) return { error: "ทุกรายการเปิดเนื้อหาต้องมีชื่อและเวลาเปิด" };
   const announcements = arr(input.announcements, 50).map((a) => ({
-    id: keepId(a?.id), title: clean(a?.title, 80), body: clean(a?.body, 600), at: ts(a?.at), video: vref(a?.video),
+    id: keepId(a?.id), title: clean(a?.title, 80), body: clean(a?.body, 600), at: ts(a?.at), video: vref(a?.video), opens: cleanOpens(a?.opens),
   }));
   if (announcements.some((a) => !a.title || !a.at)) return { error: "ทุกประกาศต้องมีหัวข้อและเวลา" };
+  if ([...releases, ...announcements].some((x) => x.opens.mode === "at" && !x.opens.at)) return { error: "เลือกวันเวลาที่จะเปิดไฟล์ดาวน์โหลดให้ครบ" };
   const old = new Map((current.polls || []).map((p) => [p.id, p]));
   const polls = arr(input.polls, 10).map((p) => {
     const id = keepId(p?.id), prev = old.get(id);
@@ -85,3 +92,30 @@ export async function castVote(pollId, optionId, ip) {
   o.votes++; await saveEvents(e);
   return { ok: true };
 }
+
+// ---------- เวลาเปิดให้ดาวน์โหลด (ผูกกับสถานะ + ประกาศ) ----------
+// เวลาเปิดของรายการ: ระบุวันเวลาตรง ๆ หรือ "หลังประกาศ N วัน M ชม." นับจากเวลาประกาศ (หรือเวลาเปิดเนื้อหา)
+export function itemOpensAt(it, base) {
+  const o = it && it.opens;
+  if (!o) return 0;
+  if (o.mode === "at") return o.at || 0;
+  if (o.mode === "after") return base + (o.days || 0) * 864e5 + (o.hours || 0) * 36e5;
+  return 0;
+}
+export function openTimes(cfg, e) {
+  const t = [cfg.reopenAt || 0];
+  for (const a of e.announcements || []) t.push(itemOpensAt(a, a.at));
+  for (const r of e.releases || []) t.push(itemOpensAt(r, r.openAt));
+  return t.filter((x) => x > 0);
+}
+// open=false ระหว่างรอ: openAt = เวลาที่จะเปิด (ใช้นับถอยหลัง) ใช้ "ใกล้ที่สุดที่ยังมาไม่ถึง" ถ้ามีหลายรายการ
+export function downloadState(cfg, e, now = Date.now()) {
+  const future = openTimes(cfg, e).filter((x) => x > now);
+  if (future.length) return { open: false, openAt: Math.min(...future) };
+  if (cfg.status === "ONLINE") return { open: true, openAt: 0 };
+  return cfg.reopenAt > 0 && cfg.reopenAt <= now ? { open: true, openAt: 0 } : { open: false, openAt: 0 };
+}
+export const nextLinkedOpen = (e, now = Date.now()) => {
+  const t = [...(e.announcements || []).map((a) => itemOpensAt(a, a.at)), ...(e.releases || []).map((r) => itemOpensAt(r, r.openAt))].filter((x) => x > now);
+  return t.length ? Math.min(...t) : 0;
+};

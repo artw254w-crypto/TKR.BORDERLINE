@@ -17,6 +17,7 @@ export const DEFAULTS = {
   status: "ONLINE",
   maintenanceMsg: "ขณะนี้ระบบปิดปรับปรุงชั่วคราวเพื่ออัปเดตเซิร์ฟเวอร์ กรุณากลับมาใหม่อีกครั้งในภายหลัง",
   cooldownSec: 5,
+  reopenAt: 0, // เวลาที่จะเปิดดาวน์โหลดอัตโนมัติหลังปิดปรับปรุง (ms, 0 = ไม่ตั้ง)
   adminClaimed: false, // true = เคยมีแอดมินล็อกอินแล้ว → ซ่อนปุ่มเฟืองจากผู้ใช้ทั่วไป (ไม่แสดงในแผงแอดมิน/ไม่ถูกแก้โดยฟอร์ม)
   img: { cover: "", bg: "" }, // รหัสเวอร์ชันของรูปที่อัปโหลด ("" = ใช้ค่าเริ่มต้น) จัดการผ่านปุ่ม "รูปภาพ" ในแผงแอดมิน
   specs: {
@@ -216,6 +217,13 @@ export function validateConfig(input, current) {
   if (!out.title || !out.fileSize || !out.version) return { error: "กรอกชื่อเกม ขนาดไฟล์ และเวอร์ชั่นให้ครบ" };
   if (input.status !== "ONLINE" && input.status !== "OFFLINE") return { error: "สถานะไม่ถูกต้อง" };
   out.status = input.status;
+  {
+    const r = input.reopenAt === undefined ? Number(current.reopenAt || 0) : Number(input.reopenAt);
+    const ok = Number.isFinite(r) && r > 0 && r < 4102444800000;
+    if (input.status === "ONLINE" || !ok) out.reopenAt = 0;
+    else if (r <= Date.now() && input.reopenAt !== undefined) return { error: "เวลาเปิดอัตโนมัติต้องเป็นเวลาในอนาคต" };
+    else out.reopenAt = Math.floor(r);
+  }
   const sec = parseInt(input.cooldownSec, 10);
   if (!(sec >= 1 && sec <= 30)) return { error: "คูลดาวน์ต้องอยู่ระหว่าง 1-30 วินาที" };
   out.cooldownSec = sec;

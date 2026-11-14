@@ -24,6 +24,7 @@
     const box = h("div", "ev-vid"), el = document.createElement("video");
     el.controls = true; el.preload = "metadata"; el.playsInline = true; el.setAttribute("controlsList", "nodownload"); el.disablePictureInPicture = true;
     el.src = "/api/video/" + v.id + "#t=0.1";
+    el.addEventListener("error", () => { if (box.querySelector(".ev-vid-err")) return; const e = h("div", "ev-vid-err", "เล่นวิดีโอนี้ไม่ได้ในเบราว์เซอร์ของคุณ ลองรีเฟรชหน้าหรือเปิดด้วยเบราว์เซอร์อื่น"); box.appendChild(e); });
     el.addEventListener("pause", () => { if (pending) setTimeout(() => { if (pending && !playing()) { pending = false; render(); } }, 300); });
     box.appendChild(el); return box;
   }
@@ -105,14 +106,24 @@
   const fromLocal = (v) => (v ? new Date(v).getTime() : 0);
   let st = null;
 
+  const dt = (ms) => trkDT(ms, {});
   function field(parent, label, el) { const l = h("label", "", label); l.appendChild(el); parent.appendChild(l); return el; }
   function inp(val, type = "text", max = 80) { const i = document.createElement(type === "area" ? "textarea" : "input"); if (type !== "area") i.type = type; if (type === "area") i.rows = 2; i.maxLength = max; i.value = val || ""; return i; }
 
   const fmtMB = (n) => (n / 1048576).toFixed(1) + " MB";
   let uploading = 0;
+  // ลองเปิดไฟล์ในเบราว์เซอร์ก่อนอัปโหลด: ถ้าเล่นไม่ได้ (เช่น HEVC/H.265, ไฟล์เสีย) ผู้ชมก็เล่นไม่ได้เหมือนกัน
+  const canPlay = (file) => new Promise((res) => {
+    const v = document.createElement("video"), u = URL.createObjectURL(file); let done = false;
+    const end = (ok) => { if (done) return; done = true; URL.revokeObjectURL(u); v.removeAttribute("src"); res(ok); };
+    v.preload = "metadata"; v.muted = true; v.onloadedmetadata = () => end(v.videoWidth > 0 || v.duration > 0); v.onerror = () => end(false);
+    setTimeout(() => end(true), 8000); v.src = u;
+  });
   async function uploadVideo(it, key, file, refresh) {
     if (!file) return;
     if (!/^video\/(mp4|webm|quicktime)$/.test(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) { it._up = { err: "รองรับเฉพาะไฟล์ MP4 / WebM" }; refresh(); return; }
+    it._up = { pct: 0, name: file.name + " (ตรวจไฟล์...)" }; refresh();
+    if (!(await canPlay(file))) { it._up = { err: "เบราว์เซอร์เล่นไฟล์นี้ไม่ได้ (โค้ดเดกไม่รองรับ เช่น HEVC/H.265 จากมือถือ หรือไฟล์เสีย) แปลงเป็น MP4 แบบ H.264 + AAC ก่อนแล้วอัปโหลดใหม่" }; refresh(); return; }
     uploading++; it._up = { pct: 0, name: file.name }; refresh();
     try {
       const i = await J("/api/admin-video", "POST", { action: "init", name: file.name, size: file.size });
@@ -145,7 +156,7 @@
         if (up && up.err) box.appendChild(h("div", "vst bad", "✖ " + up.err));
         if (v) {
           box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
-          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; box.appendChild(pv);
+          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onerror = () => box.appendChild(h("div", "vst bad", "✖ พรีวิวเล่นไม่ได้ (รหัส " + (pv.error ? pv.error.code : "?") + ") ลองอัปโหลดใหม่")); box.appendChild(pv);
         }
         const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
         if (v) { const rm = h("button", "mini del", "✖ เอาวิดีโอออก"); rm.type = "button"; rm.onclick = () => { it[key] = null; it._up = null; refresh(); }; box.appendChild(rm); }
@@ -156,6 +167,32 @@
     refresh();
   }
 
+  // "เปิดให้ดาวน์โหลดไฟล์" 2 แบบ: ระบุวันเวลา / หลังประกาศ N วัน M ชม. (ผูกกับสถานะดาวน์โหลดและตัวนับถอยหลังหน้าเว็บ)
+  function opensWidget(w, it, baseKey) {
+    const box = h("div", "opn"); w.appendChild(box);
+    if (!it.opens) it.opens = { mode: "none" };
+    const o = it.opens;
+    const seg = h("div", "seg"), body = h("div"), calc = h("div", "calc");
+    box.append(h("small", "", "🔓 เปิดให้ดาวน์โหลดไฟล์ (ผูกกับปุ่มดาวน์โหลดหน้าเว็บ: ล็อกพร้อมนับถอยหลังจนถึงเวลานี้ แล้วเปิดเองอัตโนมัติ)"), seg, body, calc);
+    const when = () => (o.mode === "at" ? o.at || 0 : o.mode === "after" ? ((it._f[baseKey].ms || 0) + (o.days || 0) * 864e5 + (o.hours || 0) * 36e5) : 0);
+    const upd = () => { const t = when(); calc.textContent = t ? "→ ไฟล์จะเปิดวันที่ " + fmt(t) : ""; };
+    const num = (key, max) => { const i = document.createElement("input"); i.type = "number"; i.min = 0; i.max = max; i.value = o[key] || 0; i.oninput = () => { o[key] = Math.max(0, Math.min(max, parseInt(i.value, 10) || 0)); upd(); }; return i; };
+    const draw = () => {
+      seg.textContent = "";
+      [["none", "ไม่ตั้ง"], ["at", "📅 ระบุวันเวลา"], ["after", "⏱ หลังประกาศ N วัน/ชม."]].forEach(([m, t]) => {
+        const b = h("button", o.mode === m ? "on" : "", t); b.type = "button";
+        b.onclick = () => { o.mode = m; if (m === "at" && !o.at) o.at = (it._f[baseKey].ms || Date.now()) + 864e5; if (m === "after") { o.days = o.days ?? 1; o.hours = o.hours ?? 0; } draw(); };
+        seg.appendChild(b);
+      });
+      body.textContent = "";
+      if (o.mode === "at") { const p = trkDT(o.at, { clearable: false }); p.addEventListener("change", () => { o.at = p.ms; upd(); }); body.appendChild(p); }
+      if (o.mode === "after") { const r = h("div", "row2"); r.append(h("span", "", "หลังเวลาประกาศ"), num("days", 365), h("span", "", "วัน"), num("hours", 23), h("span", "", "ชั่วโมง")); body.appendChild(r); }
+      upd();
+    };
+    it._f[baseKey].addEventListener("change", upd);
+    draw();
+  }
+
   function drawAdmin() {
     const body = $("evaBody"); body.textContent = "";
     const sect = (title, key, mk, blank, row) => {
@@ -164,18 +201,20 @@
       const add = h("button", "mini", "＋ " + mk); add.type = "button"; add.onclick = () => { collect(); st[key].push(blank()); drawAdmin(); }; body.appendChild(add);
     };
     sect("◈ ตั้งเวลาเปิดเนื้อหา (มีนับถอยหลัง + ประกาศอัตโนมัติเมื่อถึงเวลา)", "releases", "เพิ่มเนื้อหา", () => ({ title: "", desc: "", openAt: Date.now() + 864e5, announceTitle: "", announceBody: "" }), (w, it) => {
-      it._f = { title: field(w, "ชื่อเนื้อหา", inp(it.title)), openAt: field(w, "เวลาเปิด", inp(toLocal(it.openAt), "datetime-local")), desc: field(w, "คำอธิบาย", inp(it.desc, "area", 300)),
+      it._f = { title: field(w, "ชื่อเนื้อหา", inp(it.title)), openAt: field(w, "เวลาเปิด", dt(it.openAt)), desc: field(w, "คำอธิบาย", inp(it.desc, "area", 300)),
         announceTitle: field(w, "หัวข้อประกาศตอนเปิด (ว่าง = ใช้ค่าอัตโนมัติ)", inp(it.announceTitle)), announceBody: field(w, "ข้อความประกาศตอนเปิด", inp(it.announceBody, "area", 400)) };
       vidWidget(w, it, "announceVideo");
+      opensWidget(w, it, "openAt");
     });
     sect("◈ ประกาศ (ตั้งเวลาล่วงหน้าได้ จะขึ้นเองเมื่อถึงเวลา)", "announcements", "เพิ่มประกาศ", () => ({ title: "", body: "", at: Date.now() }), (w, it) => {
-      it._f = { title: field(w, "หัวข้อ", inp(it.title)), at: field(w, "เวลาที่แสดง", inp(toLocal(it.at), "datetime-local")), body: field(w, "เนื้อหา", inp(it.body, "area", 600)) };
+      it._f = { title: field(w, "หัวข้อ", inp(it.title)), at: field(w, "เวลาที่แสดง", dt(it.at)), body: field(w, "เนื้อหา", inp(it.body, "area", 600)) };
       vidWidget(w, it, "video");
+      opensWidget(w, it, "at");
     });
     sect("◈ โพลโหวต (ผู้ชนะประกาศอัตโนมัติเมื่อจบ)", "polls", "เพิ่มโพล", () => ({ question: "", options: [{ label: "" }, { label: "" }], startsAt: Date.now(), endsAt: Date.now() + 3 * 864e5, winnerNote: "" }), (w, it) => {
       it._f = { question: field(w, "คำถาม", inp(it.question, "text", 120)) };
       const two = h("div", "two"); w.appendChild(two);
-      it._f.startsAt = field(two, "เริ่มโหวต", inp(toLocal(it.startsAt), "datetime-local")); it._f.endsAt = field(two, "จบโหวต", inp(toLocal(it.endsAt), "datetime-local"));
+      it._f.startsAt = field(two, "เริ่มโหวต", dt(it.startsAt)); it._f.endsAt = field(two, "จบโหวต", dt(it.endsAt));
       it._f.winnerNote = field(w, "ข้อความเสริมตอนประกาศผู้ชนะ (ไม่บังคับ)", inp(it.winnerNote, "text", 200));
       it._f.opts = it.options.map((o) => { const i = field(w, "ตัวเลือก" + (o.votes != null ? ` (${o.votes} โหวต)` : ""), inp(o.label, "text", 60)); return i; });
       const ao = h("button", "mini", "＋ ตัวเลือก"); ao.type = "button"; ao.onclick = () => { collect(); if (it.options.length < 8) it.options.push({ label: "" }); drawAdmin(); }; w.appendChild(ao);

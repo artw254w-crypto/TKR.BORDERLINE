@@ -1,6 +1,6 @@
 import { isAdmin } from "../lib/shared.mjs";
 import { getEvents } from "../lib/events.mjs";
-import { CHUNK, VID_RE, readChunk } from "../lib/video.mjs";
+import { CHUNK, VID_RE, readChunk, getMeta } from "../lib/video.mjs";
 
 // ส่งวิดีโอให้ผู้ชมตาม Range  GET /api/video/<id>
 // ส่งได้ก็ต่อเมื่อถึงเวลาประกาศแล้วเท่านั้น (ก่อนหน้านั้นตอบ 404, แอดมินดูตัวอย่างได้)
@@ -14,11 +14,14 @@ export default async (req) => {
   let v = null, open = false;
   for (const a of e.announcements || []) if (a.video?.id === id) { v = a.video; open = open || a.at <= now; }
   for (const r of e.releases || []) if (r.announceVideo?.id === id) { v = r.announceVideo; open = open || r.openAt <= now; }
+  // แอดมินดูตัวอย่างได้แม้ยังไม่ได้กดบันทึกประกาศ (อัปโหลดเสร็จแล้วแต่ยังไม่ผูกกับรายการ)
+  if (!v && admin) { const m = await getMeta(id); if (m && m.sealed) v = { id, size: m.size, type: m.type }; }
   if (!v || (!open && !admin)) return nf();
   const size = v.size;
   const base = { "content-type": v.type, "accept-ranges": "bytes", "x-content-type-options": "nosniff",
     "content-security-policy": "default-src 'none'; sandbox", "cross-origin-resource-policy": "same-origin",
-    "cache-control": open && !admin ? "public, max-age=3600" : "private, no-store" };
+    "cache-control": open && !admin ? "private, max-age=3600" : "private, no-store", // ไม่ใช้ public: กัน CDN แคชช่วง Range ผิดช่วง
+    "content-disposition": "inline", vary: "Range, Cookie" };
   if (req.method === "HEAD") return new Response(null, { status: 200, headers: { ...base, "content-length": String(size) } });
   let start = 0, end = size - 1;
   const rg = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.get("range") || "").trim());

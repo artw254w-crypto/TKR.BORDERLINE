@@ -70,7 +70,7 @@
 
       <div id="notice" class="notice">
         <span id="noticeIcon" class="n-icon" aria-hidden="true">✔</span>
-        <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div></div>
+        <div><div id="noticeTitle" class="n-title">ไฟล์พร้อมสำหรับการดาวน์โหลด</div><div id="noticeDesc" class="n-desc">ดาวน์โหลดตรงความเร็วสูง กรุณาเตรียมพื้นที่ว่างในเครื่องอย่างน้อย 20 GB</div><div id="openCd" class="cd" hidden></div></div>
       </div>
 
       <div class="hp-trust">
@@ -185,6 +185,11 @@
           <label class="opt off"><input type="radio" name="status" value="OFFLINE"><span>🔴 ปิดปรับปรุง<small>ปิดปุ่มดาวน์โหลดทันที</small></span></label>
         </div>
         <label>ข้อความเมื่อปิดปรับปรุง<input id="fMsg" type="text" maxlength="200"></label>
+        <div id="reopenWrap" class="reopen">
+          <label>เปิดให้ดาวน์โหลดอัตโนมัติเมื่อ (ไม่บังคับ — ว่าง = เปิดเอง) หน้าเว็บจะขึ้นนับถอยหลังให้ผู้ใช้</label>
+          <div id="fReopenBox"></div>
+          <p id="openLink" class="hint left"></p>
+        </div>
       </section>
       <section class="sec"><h4 class="sec-t"><span class="no">2</span>เวลาคูลดาวน์ (วินาที)</h4>
         <input id="fCool" type="number" min="1" max="30" required>
@@ -285,6 +290,7 @@
 </div>
 
 <script src="/md5.js" defer></script>
+<script src="/datepicker.js" defer></script>
 <script src="/app.js" defer></script>
 <script src="/events.js" defer></script>
 </body>

@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 const store = () => getStore({ name: "trk-site", consistency: "strong" });
-export const CHUNK = 4 * 1024 * 1024;
+export const CHUNK = 3 * 1024 * 1024; // ฟังก์ชันรับ/ส่งได้ ~6 MB แต่ถูกแปลง base64 (+33%) จึงเหลือส่วนต่างไว้
 // เพดานขนาดวิดีโอ: ค่าเริ่มต้นไม่จำกัด (ติดแค่โควตาพื้นที่ของ Netlify) ถ้าอยากจำกัดตั้ง VIDEO_MAX_MB ใน Environment variables
 const MB = Number(process.env.VIDEO_MAX_MB);
 export const VIDEO_MAX = Number.isFinite(MB) && MB > 0 ? MB * 1024 * 1024 : Infinity;
