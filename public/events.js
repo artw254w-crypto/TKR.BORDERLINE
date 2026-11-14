@@ -122,8 +122,7 @@
   async function uploadVideo(it, key, file, refresh) {
     if (!file) return;
     if (!/^video\//.test(file.type) && !/\.(mp4|m4v|mov|webm|mkv|3gp)$/i.test(file.name)) { it._up = { err: "เลือกไฟล์วิดีโอ (MP4, MOV, WebM)" }; refresh(); return; }
-    it._up = { pct: 0, name: file.name + " (ตรวจไฟล์...)" }; refresh();
-    const playable = await canPlay(file);
+    const playable = true;
     uploading++; it._up = { pct: 0, name: file.name }; refresh();
     try {
       const i = await J("/api/admin-video", "POST", { action: "init", name: file.name, size: file.size });
@@ -157,7 +156,12 @@
         if (up && up.warn) box.appendChild(h("div", "vst warn", "⚠ " + up.warn));
         if (v) {
           box.appendChild(h("div", "vst", `✔ ${v.name} · ${fmtMB(v.size)}`));
-          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onloadeddata = () => { if (it._up && it._up.warn) { it._up = null; box.querySelectorAll(".vst.warn").forEach((e) => e.remove()); } }; pv.onerror = () => box.appendChild(h("div", "vst bad", "✖ พรีวิวเล่นไม่ได้ (รหัส " + (pv.error ? pv.error.code : "?") + ") ลองอัปโหลดใหม่")); box.appendChild(pv);
+          const pv = document.createElement("video"); pv.controls = true; pv.preload = "metadata"; pv.playsInline = true; pv.src = "/api/video/" + v.id + "#t=0.1"; pv.onerror = async () => {
+            let d = "";
+            try { const r = await fetch(pv.currentSrc || pv.src, { headers: { range: "bytes=0-1" }, credentials: "same-origin", cache: "no-store" }); d = `เซิร์ฟเวอร์ตอบ HTTP ${r.status} · ${r.headers.get("content-type") || "-"} · ${r.headers.get("content-range") || "-"}`; } catch (e) { d = "ติดต่อเซิร์ฟเวอร์ไม่ได้: " + e.message; }
+            const code = pv.error ? pv.error.code : "?", why = { 1: "ถูกยกเลิก", 2: "เครือข่ายขัดข้อง", 3: "ถอดรหัสภาพไม่ได้ (ไฟล์เสีย)", 4: "ไฟล์/โค้ดเดกไม่รองรับ หรือเซิร์ฟเวอร์ไม่ส่งไฟล์" }[code] || "";
+            box.appendChild(h("div", "vst bad", `✖ พรีวิวเล่นไม่ได้ รหัส ${code} ${why} | ${d}`));
+          }; box.appendChild(pv);
         }
         const pick = h("button", "mini", v ? "🔄 เปลี่ยนวิดีโอ" : "⬆ เลือกไฟล์วิดีโอ"); pick.type = "button"; pick.onclick = () => file.click(); box.appendChild(pick);
         if (v) { const rm = h("button", "mini del", "✖ เอาวิดีโอออก"); rm.type = "button"; rm.onclick = () => { it[key] = null; it._up = null; refresh(); }; box.appendChild(rm); }
