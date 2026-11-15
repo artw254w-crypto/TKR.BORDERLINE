@@ -19,7 +19,7 @@ body.mouse button,body.mouse a,body.mouse label{cursor:pointer!important}
 .hp-nav a:hover{background:#1a2316;color:#fff}
 .hp-right{display:flex;align-items:center;gap:10px}
 .hp-head .gear{width:40px;height:40px;font-size:18px}
-@media(max-width:760px){.hp-nav{display:none}.hp-brand{font-size:16px}}
+@media(max-width:760px){.hp-brand{font-size:16px;min-width:0}}
 /* ส่วนบน */
 .hp-hero{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:center;padding-top:48px;padding-bottom:56px}
 .hp-cover{position:relative;aspect-ratio:16/9;border-radius:20px;overflow:hidden;border:1px solid #3a4a2e;box-shadow:0 24px 70px rgba(0,0,0,.65);background:#0f140c;display:grid;place-items:center}
@@ -105,3 +105,24 @@ h1#title{font:900 clamp(28px,3.5vw,42px)/1.15 "Orbitron","Prompt",sans-serif;let
 .swF{background:linear-gradient(90deg,#00050d 0 35%,#0064ec 35% 65%,#5cbb38 65%)}
 .hp-panel{display:contents}
 .hp-ph,.hp-rule{display:none}
+
+/* ===== มือถือ: กดง่าย ไม่ล้นจอ (ทุกธีม) ===== */
+a,button,summary,label,input,select{-webkit-tap-highlight-color:transparent}
+a,button,summary,label.opt,.tp{touch-action:manipulation}
+@media (hover:none){#cursor,#cursorDot{display:none!important}}
+@media (max-width:760px){
+  html,body{overflow-x:hidden;max-width:100%}
+  .hp-wrap{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .hp-head .hp-bar{flex-wrap:wrap;gap:8px;padding-top:max(8px,env(safe-area-inset-top))}
+  .hp-brand{flex:1 1 auto;min-width:0}
+  .hp-right{margin-left:auto;gap:8px}
+  .hp-nav{display:flex!important;order:3;flex:0 0 100%;width:100%;gap:8px;overflow-x:auto;padding:0 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .hp-nav::-webkit-scrollbar{display:none}
+  .hp-nav a{flex:0 0 auto;height:44px;min-height:44px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center}
+  .gear,#gearBtn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .hp-dl,#dlBtn{min-height:64px;width:100%}
+  .hp-verify,#verifyBtn,.leek-dl,.ev-vote,.ev-b button,.popup button,.modal button,.btn{min-height:44px}
+  .leek-dl{display:flex;align-items:center;justify-content:center;width:100%}
+  .ev-p>summary,.hp-ph{min-height:48px}
+  input,select,textarea{font-size:16px!important} /* กัน iOS ซูมหน้าเองตอนแตะช่องกรอก */
+}

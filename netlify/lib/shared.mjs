@@ -15,6 +15,7 @@ export const DEFAULTS = {
   version: "v1.0.0",
   os: "Windows 10/11 64-bit",
   status: "ONLINE",
+  siteOnline: true, // ป้ายสถานะเว็บ (ONLINE/OFFLINE) แสดงอย่างเดียว ไม่เกี่ยวกับปุ่มดาวน์โหลด (ปุ่มดาวน์โหลดใช้ status ด้านบน)
   maintenanceMsg: "The system is temporarily down for maintenance. Please check back later.",
   cooldownSec: 5,
   reopenAt: 0, // เวลาที่จะเปิดดาวน์โหลดอัตโนมัติหลังปิดปรับปรุง (ms, 0 = ไม่ตั้ง)
@@ -217,6 +218,7 @@ export function validateConfig(input, current) {
   if (!out.title || !out.fileSize || !out.version) return { error: "กรอกชื่อเกม ขนาดไฟล์ และเวอร์ชั่นให้ครบ" };
   if (input.status !== "ONLINE" && input.status !== "OFFLINE") return { error: "สถานะไม่ถูกต้อง" };
   out.status = input.status;
+  out.siteOnline = input.siteOnline === undefined ? current.siteOnline !== false : (input.siteOnline === true || input.siteOnline === "true");
   {
     const r = input.reopenAt === undefined ? Number(current.reopenAt || 0) : Number(input.reopenAt);
     const ok = Number.isFinite(r) && r > 0 && r < 4102444800000;
@@ -243,7 +245,7 @@ export function validateConfig(input, current) {
 
 export const publicConfig = (c) => ({
   title: c.title, subtitle: c.subtitle, story: c.story, theme: c.theme || "F", fileSize: c.fileSize, version: c.version,
-  os: c.os, status: c.status, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
+  os: c.os, status: c.status, siteOnline: c.siteOnline !== false, maintenanceMsg: c.maintenanceMsg, cooldownSec: c.cooldownSec,
   specs: c.specs,
   gear: !c.adminClaimed, // ยังไม่มีแอดมินล็อกอิน = ทุกคนเห็นเฟือง
   img: { cover: c.img?.cover || "", bg: c.img?.bg || "" },

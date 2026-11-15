@@ -10,9 +10,10 @@
   const bc = "BroadcastChannel" in window ? new BroadcastChannel("trk-cfg") : null;
 
   async function api(path, method = "GET", body) {
+    const ac = "AbortController" in window ? new AbortController() : null, tm = ac ? setTimeout(() => ac.abort(), 15000) : 0; // กันค้างเมื่อเน็ต/เซิร์ฟเวอร์ช้า
     try {
       const res = await fetch(path, {
-        method, cache: "no-store", credentials: "same-origin",
+        method, cache: "no-store", credentials: "same-origin", signal: ac ? ac.signal : undefined,
         headers: body ? { "content-type": "application/json" } : {},
         body: body ? JSON.stringify(body) : undefined,
       });
@@ -21,7 +22,7 @@
       return { ok: res.ok, status: res.status, data: data || {} };
     } catch {
       return { ok: false, status: 0, data: {} };
-    }
+    } finally { clearTimeout(tm); }
   }
 
   const show = (id) => { $(id).hidden = false; };
@@ -111,7 +112,8 @@
     if (!cfg) return;
     applyGear();
     if (window.trkTheme) window.trkTheme(cfg.theme);
-    const on = cfg.status === "ONLINE";
+    const on = cfg.status === "ONLINE";            // ใช้กับปุ่มดาวน์โหลดเท่านั้น
+    const site = cfg.siteOnline !== false;          // ป้ายสถานะเว็บ (แยกอิสระ)
     $("title").textContent = cfg.title;
     document.title = cfg.title;
     $("subtitle").textContent = cfg.subtitle;
@@ -119,10 +121,10 @@
     $("size").textContent = cfg.fileSize;
     $("version").textContent = cfg.version;
     $("os").textContent = cfg.os;
-    $("hBadge").classList.toggle("off", !on);
-    $("hStatus").textContent = on ? "SERVER ONLINE" : "MAINTENANCE";
-    { const cs = $("cySys"); if (cs) { cs.textContent = on ? "system online" : "system offline : maintenance"; cs.classList.toggle("off", !on); } }
-    $("gridStatus").textContent = on ? "🟢 Ready" : "🔴 Offline (maintenance)";
+    $("hBadge").classList.toggle("off", !site);
+    $("hStatus").textContent = site ? "SERVER ONLINE" : "SERVER OFFLINE";
+    { const cs = $("cySys"); if (cs) { cs.textContent = site ? "system online" : "system offline"; cs.classList.toggle("off", !site); } }
+    $("gridStatus").textContent = site ? "🟢 Ready" : "🔴 Offline";
     $("notice").classList.toggle("off", !on);
     $("noticeIcon").textContent = on ? "✔" : "⚠";
     $("noticeTitle").textContent = on ? "The file is ready to download" : (cfg.openAt ? "Downloads are paused · opens " + fmtDT(cfg.openAt) : "Downloads are temporarily unavailable");
@@ -136,14 +138,29 @@
     applyImages(cfg.img);
   }
 
+  // โหลดค่าเว็บ: ลองซ้ำอัตโนมัติ + จำค่าล่าสุดที่โหลดสำเร็จไว้ในเครื่อง (เน็ตหลุด/เซิร์ฟเวอร์สะดุดหน้าเว็บก็ยังขึ้นปกติ) + ไม่วาดซ้ำถ้าไม่มีอะไรเปลี่ยน
+  let cfgBusy = false, cfgSig = "", cfgFails = 0, cfgRetry = 0;
+  const cacheGet = () => { try { const v = JSON.parse(localStorage.getItem("trk-cfg-cache") || "null"); return v && v.title ? v : null; } catch { return null; } };
+  const cacheSet = (c) => { try { localStorage.setItem("trk-cfg-cache", JSON.stringify(c)); } catch {} };
   async function loadConfig() {
-    const r = await api("/api/config");
-    if (r.ok) { cfg = ingest(r.data); render(); if (bc) bc.postMessage({ cfg }); }
-    else {
-      $("title").textContent = "T.R.K : BORDER LINE";
-      $("noticeDesc").textContent = "Couldn't load the data. Please refresh this page.";
-    }
+    if (cfgBusy) return; cfgBusy = true;
+    try {
+      let r = await api("/api/config");
+      for (let i = 0; i < 2 && !r.ok && r.status !== 404; i++) { await sleep(700 * (i + 1)); r = await api("/api/config"); }
+      if (r.ok) {
+        cfgFails = 0; clearTimeout(cfgRetry);
+        const c = ingest(r.data), sig = JSON.stringify(c);
+        if (sig !== cfgSig || !cfg) { cfgSig = sig; cfg = c; render(); cacheSet(c); if (bc) bc.postMessage({ cfg }); }
+      } else {
+        cfgFails++;
+        if (!cfg) { const c = cacheGet(); if (c) { cfg = c; render(); } else { $("title").textContent = "T.R.K : BORDER LINE"; $("noticeDesc").textContent = "Couldn't load the data. Retrying..."; } }
+        cfgRetry = setTimeout(loadConfig, Math.min(30000, 3000 * cfgFails)); // ลองใหม่เอง ไม่ต้องรีเฟรช
+      }
+    } finally { cfgBusy = false; }
   }
+  setInterval(() => { if (!document.hidden) loadConfig(); }, 45000);               // รีเฟรชค่าเป็นระยะ
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadConfig(); });
+  window.addEventListener("online", loadConfig);
 
   /* ---------- ดาวน์โหลด (เซิร์ฟเวอร์ตรวจเวลาคูลดาวน์) ---------- */
   function closePopup() { popupRun++; clearInterval(timer); hide("popup"); }
@@ -388,6 +405,7 @@
     $("fVer").value = c.version; $("fMsg").value = c.maintenanceMsg; $("fCool").value = c.cooldownSec;
     $("fSub").value = c.subtitle || ""; $("fStory").value = c.story || "";
     $("fMd5").value = c.fileMd5 || "";
+    { const so = document.querySelector(`input[name="siteOnline"][value="${c.siteOnline === false ? "OFF" : "ON"}"]`); if (so) so.checked = true; }
     $("modeNote").textContent = c.r2Mode
       ? "โหมดส่งไฟล์: ☁ Cloudflare R2 — เว็บรู้ว่าผู้ใช้โหลดจบหรือไม่ (ดูในประวัติดาวน์โหลด) ลิงก์ Google Drive ด้านบนไม่ถูกใช้"
       : "โหมดส่งไฟล์: Google Drive — เว็บรู้เองไม่ได้ว่าผู้ใช้โหลดจบหรือไม่ ถ้าต้องการรู้ ให้ตั้งค่า Cloudflare R2 ตามไฟล์ README-R2.txt";
@@ -466,6 +484,7 @@
     btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
     const r = await api("/api/admin-config", "PUT", {
       status: document.querySelector('input[name="status"]:checked').value,
+      siteOnline: (document.querySelector('input[name="siteOnline"]:checked') || {}).value !== "OFF",
       reopenAt: document.querySelector('input[name="status"]:checked').value === "OFFLINE" && reopenPicker ? reopenPicker.ms : 0,
       fileUrl: $("fUrl").value, title: $("fTitle").value, fileSize: $("fSize").value,
       version: $("fVer").value, maintenanceMsg: $("fMsg").value, cooldownSec: $("fCool").value,
