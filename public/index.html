@@ -29,6 +29,14 @@
 <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" style="fill:currentColor;stroke:none"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></symbol>
 </defs></svg>
+<div id="lockScreen" class="lock" role="alertdialog" aria-modal="true" aria-labelledby="lockTitle" aria-describedby="lockMsg" hidden>
+  <div class="lock-box">
+    <div class="lock-ring"><svg class="ic solo" aria-hidden="true"><use href="#i-lock"/></svg></div>
+    <h1 id="lockTitle">Server Offline</h1>
+    <p id="lockMsg">The website is currently being upgraded and re-integrated once again. Please check back soon.</p>
+  </div>
+  <button id="lockAdmin" class="lock-admin" type="button" aria-label="Admin" hidden><svg class="ic solo" aria-hidden="true"><use href="#i-gear"/></svg></button>
+</div>
 <div id="cursor"></div><div id="cursorDot"></div>
 <canvas id="bg"></canvas>
 <a class="hp-skip" href="#download">Skip to the download button</a>

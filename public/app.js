@@ -117,6 +117,7 @@
     if (window.trkTheme) window.trkTheme(cfg.theme);
     const on = cfg.status === "ONLINE";            // ใช้กับปุ่มดาวน์โหลดเท่านั้น
     const site = cfg.siteOnline !== false;          // ป้ายสถานะเว็บ (แยกอิสระ)
+    setLocked(!site);
     $("title").textContent = cfg.title;
     document.title = cfg.title;
     $("subtitle").textContent = cfg.subtitle;
@@ -407,7 +408,13 @@
   // พอมีแอดมินล็อกอินแล้ว cfg.gear เป็น false → ผู้ใช้ทั่วไปเฟืองหายภายใน ~4 วินาที เหลือเฉพาะแอดมิน
   function applyGear() {
     const on = adminUi || !!(cfg && cfg.gear);
-    $("gearBtn").hidden = !on; $("footAdmin").hidden = !on;
+    $("gearBtn").hidden = !on; $("footAdmin").hidden = !on; $("lockAdmin").hidden = !on;
+  }
+  // เว็บออฟไลน์: คลุมทั้งหน้าด้วยหน้าจอล็อก (พื้นหลังว่าง) และกันโฟกัส/กดทะลุไปที่หน้าหลักด้านหลัง แอดมินเข้าได้ทางปุ่มเฟืองเล็กมุมขวาล่างหรือ /#admin
+  function setLocked(on) {
+    $("lockScreen").hidden = !on;
+    document.documentElement.classList.toggle("is-locked", on);
+    document.querySelectorAll("body > header, body > main, body > footer").forEach((e) => (on ? e.setAttribute("inert", "") : e.removeAttribute("inert")));
   }
   function showAdminUi(on) { adminUi = on; applyGear(); }
   function adminGained() { adminHint = true; setHint(true); showAdminUi(true); }
@@ -912,7 +919,7 @@
   /* ---------- เชื่อมปุ่ม (ไม่ใช้ onclick ใน HTML เพื่อให้ CSP เข้มงวดได้) ---------- */
   $("dlBtn").addEventListener("click", startDownload);
   $("popCancel").addEventListener("click", closePopup);
-  $("gearBtn").addEventListener("click", openPanel);
+  $("gearBtn").addEventListener("click", openPanel); $("lockAdmin").addEventListener("click", openPanel);
   $("footAdmin").addEventListener("click", openPanel);
   $("loginForm").addEventListener("submit", doLogin);
   $("adminForm").addEventListener("submit", saveForm);

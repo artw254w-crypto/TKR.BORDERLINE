@@ -116,6 +116,7 @@ export function openTimes(cfg, e) {
 }
 // open=false ระหว่างรอ: openAt = เวลาที่จะเปิด (ใช้นับถอยหลัง) ใช้ "ใกล้ที่สุดที่ยังมาไม่ถึง" ถ้ามีหลายรายการ
 export function downloadState(cfg, e, now = Date.now()) {
+  if (cfg.siteOnline === false) return { open: false, openAt: 0 }; // เว็บออฟไลน์ทั้งระบบ: ปิดดาวน์โหลดด้วย
   const future = openTimes(cfg, e).filter((x) => x > now);
   if (future.length) return { open: false, openAt: Math.min(...future) };
   if (cfg.status === "ONLINE") return { open: true, openAt: 0 };
