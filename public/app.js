@@ -1,6 +1,9 @@
 "use strict";
 (() => {
   const $ = (id) => document.getElementById(id);
+  // ไอคอนเส้นเรียบ (SVG sprite ใน index.html) แทนอิโมจิ: ico("name") สร้างไอคอน, label(el, "name", "ข้อความ") ใส่ไอคอน+ข้อความ
+  const ico = (n, cls) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"), u = document.createElementNS("http://www.w3.org/2000/svg", "use"); s.setAttribute("class", "ic" + (cls ? " " + cls : "")); s.setAttribute("aria-hidden", "true"); u.setAttribute("href", "#i-" + n); s.appendChild(u); return s; };
+  const label = (el, n, t, cls) => el.replaceChildren(ico(n, cls), document.createTextNode(t));
   // โหลดฟอนต์แบบไม่บล็อกการแสดงผล (หน้าเว็บขึ้นทันที แล้วฟอนต์ค่อยสลับเข้ามา)
   { const l = document.createElement("link"); l.rel = "stylesheet";
     l.href = "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Prompt:wght@300;400;600;700&display=swap";
@@ -103,7 +106,7 @@
     const ms = oa - (Date.now() + skew), v = left(ms);
     buildOpenCd(); cd.hidden = false;
     window.trkCd.bind(cd, () => (cfg && cfg.openAt ? cfg.openAt : 0) - (Date.now() + skew), "open"); // ตัวเลขวิ่งแล้วล็อกเป็นเวลาจริง (cdfx.js)
-    $("dlText").textContent = `🔒 Download opens in ${v.d ? v.d + "d " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`;
+    label($("dlText"), "lock", `Download opens in ${v.d ? v.d + "d " : ""}${String(v.h).padStart(2, "0")}:${String(v.m).padStart(2, "0")}:${String(v.s).padStart(2, "0")}`);
     if (ms <= 0 && Date.now() - openRefetch > 2000) { openRefetch = Date.now(); loadConfig(); }
   }
   setInterval(tickOpen, 1000);
@@ -124,15 +127,15 @@
     $("hBadge").classList.toggle("off", !site);
     $("hStatus").textContent = site ? "SERVER ONLINE" : "SERVER OFFLINE";
     { const cs = $("cySys"); if (cs) { cs.textContent = site ? "system online" : "system offline"; cs.classList.toggle("off", !site); } }
-    $("gridStatus").textContent = site ? "🟢 Ready" : "🔴 Offline";
+    label($("gridStatus"), "dot", site ? "Ready" : "Offline", site ? "ic-on" : "ic-off");
     $("notice").classList.toggle("off", !on);
-    $("noticeIcon").textContent = on ? "✔" : "⚠";
+    $("noticeIcon").replaceChildren(ico(on ? "check" : "alert", "solo"));
     $("noticeTitle").textContent = on ? "The file is ready to download" : (cfg.openAt ? "Downloads are paused · opens " + fmtDT(cfg.openAt) : "Downloads are temporarily unavailable");
     $("noticeDesc").textContent = on
       ? "Direct high-speed download. Please keep at least 20 GB of free space on your device."
       : cfg.maintenanceMsg || "The system is under maintenance";
     $("dlBtn").disabled = !on;
-    $("dlText").textContent = on ? "🚀 Ready to download (click here)" : "🔒 Temporarily closed for maintenance";
+    label($("dlText"), on ? "download" : "lock", on ? "Ready to download (click here)" : "Temporarily closed for maintenance");
     tickOpen();
     renderSpecs(cfg.specs);
     applyImages(cfg.img);
@@ -172,10 +175,10 @@
 
   function showError(status) {
     clearInterval(timer);
-    $("count").textContent = "✖";
+    $("count").replaceChildren(ico("x", "solo"));
     $("popMsg").textContent = errText(status);
     $("prog").style.width = "0%";
-    const go = $("popGo"); go.disabled = true; go.onclick = null; go.textContent = "⏳ Preparing...";
+    const go = $("popGo"); go.disabled = true; go.onclick = null; label(go, "clock", "Preparing...");
   }
 
   // กดแล้วป๊อปอัปเปิดและนับถอยหลังทันที (ไม่รอเซิร์ฟเวอร์) ส่วนการขอ token ทำพร้อมกันเบื้องหลัง
@@ -188,7 +191,7 @@
     const total = (cfg && cfg.cooldownSec) || 5;
     let left = total;
 
-    go.disabled = true; go.onclick = null; go.textContent = `⏳ Preparing your file (${left}s)...`;
+    go.disabled = true; go.onclick = null; label(go, "clock", `Preparing your file (${left}s)...`);
     $("popMsg").textContent = "Your download link is being prepared. Please wait a moment.";
     $("count").textContent = left;
     prog.style.transition = "none"; prog.style.width = "100%"; void prog.offsetWidth; prog.style.transition = "";
@@ -199,7 +202,7 @@
     started.then((s) => { if (run === popupRun && !s.ok) showError(s.status); });
 
     const finish = async () => {
-      go.textContent = "🚀 Opening link...";
+      label(go, "download", "Opening link...");
       const s = await started;
       if (run !== popupRun || !s.ok) return;
       let r = { ok: false, status: 0, data: {} };
@@ -212,7 +215,7 @@
       }
       if (r.ok && isUrl(r.data.url)) {
         const url = r.data.url;
-        go.disabled = false; go.textContent = "🚀 Start download!";
+        go.disabled = false; label(go, "download", "Start download!");
         go.onclick = () => {
           // แจ้งเซิร์ฟเวอร์ว่ากดดาวน์โหลดจริง (เพื่อบันทึกประวัติ) แล้วไปต่อทันที ไม่รอผล
           fetch("/api/download", { method: "POST", headers: { "content-type": "application/json" },
@@ -230,11 +233,11 @@
       if (left > 0) {
         $("count").textContent = left;
         prog.style.width = ((left - 1) / total) * 100 + "%";
-        go.textContent = `⏳ Preparing your file (${left}s)...`;
+        label(go, "clock", `Preparing your file (${left}s)...`);
         return;
       }
       clearInterval(timer);
-      $("count").textContent = "✨";
+      $("count").replaceChildren(ico("check", "solo"));
       finish();
     }, 1000);
   }
@@ -338,6 +341,21 @@
     const el = $("coverImg");
     if (el.getAttribute("src") !== cover) { el.hidden = false; $("coverHero").hidden = true; el.src = cover; }
     document.documentElement.style.setProperty("--bg-img", bg ? `url("${bg}")` : "none");
+    syncBrand(cover);
+  }
+  // โลโก้หัวเว็บ + ไอคอนแท็บเบราว์เซอร์ ใช้รูปเดียวกับโปรไฟล์/หน้าปก (เปลี่ยนรูปในแอดมิน = เปลี่ยนทั้งสามที่พร้อมกัน)
+  let brandSrc = "";
+  function syncBrand(src) {
+    if (!src || src === brandSrc) return; brandSrc = src;
+    const lg = $("hLogo"); if (lg) { lg.onerror = () => { lg.onerror = null; lg.src = "/favicon.png"; }; lg.src = src; }
+    const im = new Image();
+    im.onload = () => { try {
+      const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), w = im.naturalWidth, h = im.naturalHeight, s = Math.min(w, h);
+      x.save(); x.beginPath(); x.arc(32, 32, 31, 0, Math.PI * 2); x.clip(); x.drawImage(im, (w - s) / 2, (h - s) / 2, s, s, 0, 0, 64, 64); x.restore();
+      x.strokeStyle = "#0a5cff"; x.lineWidth = 3; x.beginPath(); x.arc(32, 32, 30, 0, Math.PI * 2); x.stroke();
+      const f = $("favicon"); if (f) f.href = c.toDataURL("image/png");
+    } catch {} };
+    im.src = src;
   }
   function applyImages(img) {
     const cover = imgUrl("cover", img && img.cover) || COVER_DEFAULT, bg = imgUrl("bg", img && img.bg);
@@ -358,15 +376,15 @@
   function renderScan() {
     // หน้าหลักแสดงเฉพาะสถานะสั้น ๆ รายละเอียด (เครื่องมือ วันที่ MD5 ฯลฯ) ดูได้ในแผงแอดมิน หัวข้อ 4
     const el = $("scanStat"), sub = $("scanSub"), s = scan;
-    let cls = "scan-none", t = "🛡 Checking status...", u = "";
+    let cls = "scan-none", t = "Checking status...", ic = "shield", u = "";
     if (s) {
-      if (s.state === "clean") { cls = "scan-ok"; t = "🛡 Virus scanned: no threats found"; }
-      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "🛡 Scan result available (file pending confirmation)"; }
-      else if (s.state === "outdated") { cls = "scan-warn"; t = "⚠ File changed since the last scan"; }
-      else if (s.state === "infected") { cls = "scan-bad"; t = "⛔ Malware found in the scanned file"; u = "Please do not download until the admin fixes this."; }
-      else { t = "🛡 Not virus scanned yet"; }
+      if (s.state === "clean") { cls = "scan-ok"; t = "Virus scanned: no threats found"; ic = "shield"; }
+      else if (s.state === "unconfirmed") { cls = "scan-warn"; t = "Scan result available (file pending confirmation)"; ic = "shield"; }
+      else if (s.state === "outdated") { cls = "scan-warn"; t = "File changed since the last scan"; ic = "alert"; }
+      else if (s.state === "infected") { cls = "scan-bad"; t = "Malware found in the scanned file"; ic = "alert"; u = "Please do not download until the admin fixes this."; }
+      else { t = "Not virus scanned yet"; ic = "shield"; }
     }
-    el.className = cls; el.textContent = t; sub.textContent = u;
+    el.className = cls; label(el, ic, t); sub.textContent = u;
   }
 
   async function loadScan() {

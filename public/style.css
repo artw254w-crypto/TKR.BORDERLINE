@@ -245,3 +245,16 @@ html.dt-open::after{content:"Close developer tools (DevTools) to continue";posit
 
 textarea{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:10px;background:#020617;border:1px solid var(--bd,#263320);color:#fff;font:inherit;font-size:13px;line-height:1.6;resize:vertical;min-height:70px;-webkit-user-select:text;user-select:text}
 textarea:focus{outline:none;border-color:var(--olive,#65a30d)}
+
+/* ===== ไอคอนเส้นเรียบ (แทนอิโมจิ) + โลโก้/โปรไฟล์ใช้รูปเดียวกัน ===== */
+.ic{width:1.1em;height:1.1em;display:inline-block;vertical-align:-.2em;margin-right:.5em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter;flex:none}
+.ic.solo,.hp-dl-ic .ic,.n-icon .ic,.hourglass .ic,.shield .ic,.gear .ic,#count .ic,.x .ic{margin-right:0}
+.ic-on{color:#34d399}.ic-off{color:#fb7185}
+.hourglass .ic,.shield .ic{width:1em;height:1em;stroke-width:1.6}
+.hp-dl-ic .ic{width:1.25em;height:1.25em}
+.gear .ic{width:1.15em;height:1.15em}
+#count .ic{width:.9em;height:.9em}
+img.hp-logo{display:block;border:0;border-radius:50%;object-fit:cover;padding:0;background:#00050d}
+.hero{display:grid;place-items:center;width:100%;height:100%;font-size:0}
+.hero img{width:min(100%,220px);aspect-ratio:1;border-radius:50%;object-fit:cover}
+.leek-dl .ic{margin-right:.55em}

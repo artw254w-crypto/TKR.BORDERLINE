@@ -57,7 +57,7 @@
 
   // LEEKS: ปุ่มเดียว เปิดลิงก์ดาวน์โหลด (เช่น Google Drive) ในแท็บใหม่
   function leekButton(l) {
-    const a = h("a", "leek-dl", "▸ Download"); a.href = l.url; a.target = "_blank"; a.rel = "noopener noreferrer nofollow";
+    const a = h("a", "leek-dl"); { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"), u = document.createElementNS("http://www.w3.org/2000/svg", "use"); s.setAttribute("class", "ic"); s.setAttribute("aria-hidden", "true"); u.setAttribute("href", "#i-download"); s.appendChild(u); a.append(s, document.createTextNode("Download")); } a.href = l.url; a.target = "_blank"; a.rel = "noopener noreferrer nofollow";
     return a;
   }
 

@@ -126,3 +126,4 @@ a,button,summary,label.opt,.tp{touch-action:manipulation}
   .ev-p>summary,.hp-ph{min-height:48px}
   input,select,textarea{font-size:16px!important} /* กัน iOS ซูมหน้าเองตอนแตะช่องกรอก */
 }
+@media (max-width:760px){main>.hp-sec{margin-left:16px;margin-right:16px;width:auto}}

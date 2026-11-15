@@ -7,7 +7,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="referrer" content="no-referrer">
 <title>T.R.K : BORDER LINE</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E">
+<link id="favicon" rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/style.css">
@@ -17,17 +17,29 @@
 <script src="/theme.js"></script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.4-3.2 7.8-8 9-4.8-1.2-8-4.6-8-9V6z"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.1"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
+<symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" style="fill:currentColor;stroke:none"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></symbol>
+</defs></svg>
 <div id="cursor"></div><div id="cursorDot"></div>
 <canvas id="bg"></canvas>
 <a class="hp-skip" href="#download">Skip to the download button</a>
 
 <header class="hp-head">
   <div class="hp-wrap hp-bar">
-    <a class="hp-brand" href="#top"><span class="hp-logo" aria-hidden="true">🎯</span><span>T.R.K <b>BORDER LINE</b></span></a>
+    <a class="hp-brand" href="#top"><img id="hLogo" class="hp-logo" src="/favicon.png" alt="" width="38" height="38"><span>T.R.K <b>BORDER LINE</b></span></a>
     <nav class="hp-nav" aria-label="Main menu"><a href="#download">Download</a><a href="#steps">How to install</a><a href="#specs">System requirements</a></nav>
     <div class="hp-right">
       <div id="hBadge" class="badge"><span class="dot pulse"></span><span id="hStatus">SERVER ONLINE</span></div>
-      <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ" hidden>⚙</button>
+      <button id="gearBtn" class="gear" type="button" aria-label="จัดการระบบ" hidden><svg class="ic solo" aria-hidden="true"><use href="#i-gear"/></svg></button>
     </div>
   </div>
 </header>
@@ -37,7 +49,7 @@
     <div class="hp-visual">
       <div class="hp-cover">
         <img id="coverImg" class="cover-img" alt="Game screenshot" decoding="async" hidden>
-        <span id="coverHero" class="hero" hidden>🎯</span>
+        <span id="coverHero" class="hero" hidden><img src="/favicon.png" alt=""></span>
         <span class="hp-build">BUILD 2026.1</span>
       </div>
     </div>
@@ -62,20 +74,20 @@
       <h2 class="hp-ph">DOWNLOAD</h2>
       <div id="download" class="hp-cta">
         <button id="dlBtn" class="hp-dl" type="button">
-          <span class="hp-dl-ic" aria-hidden="true">⬇</span>
-          <span class="hp-dl-tx"><span id="dlText">🚀 Ready to download (click here)</span><small>We'll prepare your link in a few seconds</small></span>
+          <span class="hp-dl-ic" aria-hidden="true"><svg class="ic solo" aria-hidden="true"><use href="#i-download"/></svg></span>
+          <span class="hp-dl-tx"><span id="dlText">Ready to download (click here)</span><small>We'll prepare your link in a few seconds</small></span>
         </button>
-        <button id="verifyBtn" class="hp-link" type="button">🔍 Check that your downloaded file is complete</button>
+        <button id="verifyBtn" class="hp-link" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Check that your downloaded file is complete</button>
       </div>
 
       <div id="notice" class="notice">
-        <span id="noticeIcon" class="n-icon" aria-hidden="true">✔</span>
+        <span id="noticeIcon" class="n-icon" aria-hidden="true"><svg class="ic solo" aria-hidden="true"><use href="#i-check"/></svg></span>
         <div><div id="noticeTitle" class="n-title">The file is ready to download</div><div id="noticeDesc" class="n-desc">Direct high-speed download. Please keep at least 20 GB of free space on your device.</div><div id="openCd" class="cd" hidden></div></div>
       </div>
 
       <div class="hp-trust">
-        <div><small>Server status</small><b id="gridStatus">🟢 Ready</b></div>
-        <div><small>File security</small><b id="scanStat" class="scan-none">🛡 Checking status...</b><span id="scanSub" class="scan-sub"></span></div>
+        <div><small>Server status</small><b id="gridStatus"><svg class="ic ic-on" aria-hidden="true"><use href="#i-dot"/></svg>Ready</b></div>
+        <div><small>File security</small><b id="scanStat" class="scan-none"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Checking status...</b><span id="scanSub" class="scan-sub"></span></div>
       </div>
       </div>
     </div>
@@ -109,7 +121,7 @@
 <!-- Download popup -->
 <div id="popup" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="popTitle">
   <div class="box center">
-    <div class="hourglass">⏳</div>
+    <div class="hourglass"><svg class="ic solo" aria-hidden="true"><use href="#i-clock"/></svg></div>
     <h3 id="popTitle" class="orb">Preparing the battlefield...</h3>
     <p id="popMsg" class="desc">Your download link is being prepared. Please wait a moment.</p>
     <div class="counter">
@@ -118,8 +130,8 @@
       <div class="progress"><div id="prog"></div></div>
     </div>
     <div class="btns">
-      <button id="popCancel" class="btn ghost" type="button">❌ Cancel</button>
-      <button id="popGo" class="btn" type="button" disabled>⏳ Preparing...</button>
+      <button id="popCancel" class="btn ghost" type="button"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>Cancel</button>
+      <button id="popGo" class="btn" type="button" disabled><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Preparing...</button>
     </div>
   </div>
 </div>
@@ -127,8 +139,8 @@
 <!-- ตรวจไฟล์ที่ดาวน์โหลดมา: เบราว์เซอร์คำนวณขนาด/MD5 ในเครื่อง ไม่อัปโหลดไฟล์ -->
 <div id="verify" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="verifyTitle">
   <div class="box">
-    <button class="x" data-close="verify" type="button" aria-label="Close">✕</button>
-    <div class="center"><div class="shield">🔍</div><h3 id="verifyTitle" class="orb">Verify your download</h3>
+    <button class="x" data-close="verify" type="button" aria-label="Close"><svg class="ic solo" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <div class="center"><div class="shield"><svg class="ic solo" aria-hidden="true"><use href="#i-search"/></svg></div><h3 id="verifyTitle" class="orb">Verify your download</h3>
     <p class="desc">Choose the file you finished downloading. We compare its size and MD5 with the original to check that it is complete and not corrupted. The check runs on your device and your file is never uploaded.</p></div>
     <input id="vFile" type="file" aria-label="Choose the downloaded file">
     <div id="vProgWrap" class="progress" hidden><div id="vProg"></div></div>
@@ -136,7 +148,7 @@
     <div id="vRes" class="vres" hidden><b id="vTitle"></b><span id="vDetail"></span></div>
     <div class="btns end">
       <button id="vSkip" class="btn ghost" type="button" hidden>Skip MD5 check</button>
-      <button id="vGo" class="btn" type="button">🔍 Start check</button>
+      <button id="vGo" class="btn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Start check</button>
     </div>
   </div>
 </div>
