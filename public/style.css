@@ -260,7 +260,7 @@ img.hp-logo{display:block;border:0;border-radius:50%;object-fit:cover;padding:0;
 .leek-dl .ic{margin-right:.55em}
 
 /* ===== หน้าจอล็อกเมื่อเว็บออฟไลน์ (สถานะเว็บ = ออฟไลน์) ===== */
-.lock{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:24px;background:#00050d;text-align:center}
+.lock{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;display:grid;place-items:center;padding:24px;background:#00050d;text-align:center;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none}
 .lock[hidden]{display:none}
 .lock-box{max-width:520px}
 .lock-ring{width:112px;height:112px;margin:0 auto 28px;display:grid;place-items:center;border:2px solid #0a5cff;border-radius:50%;color:#0a5cff;box-shadow:0 0 28px rgba(10,92,255,.3)}
@@ -269,4 +269,5 @@ img.hp-logo{display:block;border:0;border-radius:50%;object-fit:cover;padding:0;
 .lock p{margin:0;font-size:clamp(14px,3.6vw,17px);line-height:1.7;color:#8aa3cc}
 .lock-admin{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:44px;height:44px;display:grid;place-items:center;background:transparent;border:1px solid #0a3a8f;color:#2d5fb8;opacity:.6;cursor:pointer}
 .lock-admin[hidden]{display:none}
-html.is-locked,html.is-locked body{overflow:hidden}
+html.is-locked{overflow:hidden;overscroll-behavior:none}
+html.is-locked body{position:fixed;left:0;right:0;width:100%;overflow:hidden} /* ตรึงหน้าไว้ ไม่มีอะไรให้เลื่อน (ตำแหน่งเลื่อนเดิมเก็บไว้คืนตอนเปิดเว็บ) */

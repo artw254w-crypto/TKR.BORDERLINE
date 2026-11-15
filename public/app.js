@@ -411,9 +411,14 @@
     $("gearBtn").hidden = !on; $("footAdmin").hidden = !on; $("lockAdmin").hidden = !on;
   }
   // เว็บออฟไลน์: คลุมทั้งหน้าด้วยหน้าจอล็อก (พื้นหลังว่าง) และกันโฟกัส/กดทะลุไปที่หน้าหลักด้านหลัง แอดมินเข้าได้ทางปุ่มเฟืองเล็กมุมขวาล่างหรือ /#admin
+  let lockY = 0;
+  { const ls = () => $("lockScreen"); const stop = (e) => { const l = ls(); if (l && !l.hidden && l.contains(e.target)) e.preventDefault(); }; document.addEventListener("touchmove", stop, { passive: false }); document.addEventListener("wheel", stop, { passive: false }); }
   function setLocked(on) {
+    const was = document.documentElement.classList.contains("is-locked");
+    if (on && !was) { lockY = window.scrollY || 0; document.body.style.top = -lockY + "px"; }
     $("lockScreen").hidden = !on;
     document.documentElement.classList.toggle("is-locked", on);
+    if (!on && was) { document.body.style.top = ""; window.scrollTo(0, lockY); }
     document.querySelectorAll("body > header, body > main, body > footer").forEach((e) => (on ? e.setAttribute("inert", "") : e.removeAttribute("inert")));
   }
   function showAdminUi(on) { adminUi = on; applyGear(); }
