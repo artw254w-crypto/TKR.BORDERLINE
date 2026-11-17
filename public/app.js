@@ -417,6 +417,7 @@
     const was = document.documentElement.classList.contains("is-locked");
     if (on && !was) { lockY = window.scrollY || 0; document.body.style.top = -lockY + "px"; }
     $("lockScreen").hidden = !on;
+    if (on) closePopup(); // เว็บออฟไลน์: ยกเลิกนับถอยหลังในป๊อปอัปที่ค้างอยู่
     document.documentElement.classList.toggle("is-locked", on);
     if (!on && was) { document.body.style.top = ""; window.scrollTo(0, lockY); }
     document.querySelectorAll("body > header, body > main, body > footer").forEach((e) => (on ? e.setAttribute("inert", "") : e.removeAttribute("inert")));

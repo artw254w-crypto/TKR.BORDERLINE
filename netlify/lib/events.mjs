@@ -115,6 +115,22 @@ export function openTimes(cfg, e) {
   return t.filter((x) => x > 0);
 }
 // open=false ระหว่างรอ: openAt = เวลาที่จะเปิด (ใช้นับถอยหลัง) ใช้ "ใกล้ที่สุดที่ยังมาไม่ถึง" ถ้ามีหลายรายการ
+// ออฟไลน์ = หยุดเวลา: ตอนกลับมาออนไลน์ เลื่อนทุกเวลาที่ "ยังมาไม่ถึงตอนหยุด" ออกไปเท่ากับเวลาที่หยุด (นับถอยหลังเหลือเท่าเดิมเป๊ะ)
+export function shiftTimeline(e, pausedAt, delta) {
+  const f = (t) => (t > pausedAt ? t + delta : t);
+  const opens = (it, base) => {
+    const o = it && it.opens; if (!o) return o;
+    if (o.mode === "at") return { ...o, at: f(o.at) };
+    if (o.mode === "after" && !(base > pausedAt)) { const t = itemOpensAt(it, base); if (t > pausedAt) return { mode: "at", at: t + delta }; } // ฐานเวลาผ่านไปแล้วแต่เวลาเปิดยังไม่ถึง: แปลงเป็นเวลาตายตัวแล้วเลื่อน
+    return o;
+  };
+  return {
+    ...e,
+    releases: (e.releases || []).map((r) => ({ ...r, opens: opens(r, r.openAt), openAt: f(r.openAt) })),
+    announcements: (e.announcements || []).map((a) => ({ ...a, opens: opens(a, a.at), at: f(a.at) })),
+    polls: (e.polls || []).map((p) => ({ ...p, startsAt: f(p.startsAt), endsAt: f(p.endsAt) })),
+  };
+}
 export function downloadState(cfg, e, now = Date.now()) {
   if (cfg.siteOnline === false) return { open: false, openAt: 0 }; // เว็บออฟไลน์ทั้งระบบ: ปิดดาวน์โหลดด้วย
   const future = openTimes(cfg, e).filter((x) => x > now);

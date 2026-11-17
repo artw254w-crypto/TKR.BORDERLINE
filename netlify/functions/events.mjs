@@ -1,4 +1,4 @@
-import { json, sameOrigin, readJson, clientIp, rateLimit } from "../lib/shared.mjs";
+import { json, sameOrigin, readJson, clientIp, rateLimit, getConfig } from "../lib/shared.mjs";
 import { getEvents, publicEvents, castVote } from "../lib/events.mjs";
 
 export default async (req, ctx) => {
@@ -6,6 +6,7 @@ export default async (req, ctx) => {
   if (path === "/api/events" && req.method === "GET") return json(publicEvents(await getEvents()));
   if (path === "/api/vote" && req.method === "POST") {
     if (!sameOrigin(req)) return json({ error: "forbidden" }, 403);
+    if ((await getConfig()).siteOnline === false) return json({ error: "The site is offline right now." }, 503); // ออฟไลน์ = หยุดทุกอย่าง
     const ip = clientIp(req, ctx);
     if (!(await rateLimit("vote:" + ip, 30, 10 * 60 * 1000))) return json({ error: "Too many votes. Please try again later." }, 429);
     let b; try { b = await readJson(req, 500); } catch { return json({ error: "Invalid data" }, 400); }
